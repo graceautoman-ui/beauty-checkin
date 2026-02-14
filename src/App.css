@@ -1,0 +1,476 @@
+#root {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.25rem 1.5rem;
+  box-sizing: border-box;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.app-header h1 {
+  font-size: 1.4rem;
+  margin: 0;
+  letter-spacing: 0.03em;
+}
+
+.app-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tab {
+  flex: 1;
+  padding: 0.4rem 0.3rem;
+  border-radius: 999px;
+  border: none;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: linear-gradient(135deg, #f97316, #ec4899);
+  color: white;
+  font-weight: 600;
+}
+
+.app-main {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 1.25rem;
+  padding: 1rem 0.9rem 1.2rem;
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(148, 163, 184, 0.18);
+  overflow: auto;
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.settings-section h2 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+
+.settings-goals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.settings-goals label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+
+input,
+select,
+button {
+  font-family: inherit;
+}
+
+input,
+select {
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.82rem;
+  box-sizing: border-box;
+  width: 100%; /* 在各自网格列中占满，保证与表头对齐 */
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid #f97316;
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.exercise-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.exercise-row {
+  display: grid;
+  /* 类型(2 字) | 名称(<=7 字) | 单位(2 字) | 每单位美丽值(<=4 字符) | 操作按钮 */
+  /* 使用 minmax 保证最小宽度的同时，让 5 列在整行中均匀分布 */
+  grid-template-columns:
+    minmax(4em, 1fr)   /* 类型 */
+    minmax(5em, 2fr)   /* 名称 */
+    minmax(3em, 1fr)   /* 单位 */
+    minmax(6ch, 1.2fr) /* 每单位美丽值（在原 4.5ch 基础上放大约 30%） */
+    minmax(4em, 1fr);  /* 删除 */
+  gap: 0.35rem;
+  align-items: center;
+}
+
+
+.exercise-row--header {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: #ffe4f1; /* 淡粉色底 */
+  border-radius: 0.75rem;
+  padding: 0.25rem 0.4rem;
+}
+
+.exercise-row--header span {
+  display: block;
+  text-align: center;
+}
+
+.exercise-row input,
+.exercise-row select {
+  text-align: center;
+}
+
+.settings-hint {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin: 0 0 0.4rem;
+}
+
+button {
+  border-radius: 999px;
+  border: none;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f97316, #ec4899);
+  color: white;
+}
+
+button.secondary {
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+button.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding-inline: 0.5rem;
+  font-size: 0.75rem;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 400px) {
+  .app-root {
+    padding-inline: 0.75rem;
+  }
+
+  .app-main {
+    padding-inline: 0.75rem;
+  }
+}
+
+/* ---------- 首页 Dashboard ---------- */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.summary-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #fff5f5, #fff9f5);
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.summary-card-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+/* 第一类：今日 | 目标 | 完成率 一行并列 */
+.summary-card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.summary-card-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+  text-align: center;
+}
+
+.summary-card-stats-row--four {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.summary-card-stats-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.summary-card-stats-values {
+  font-size: 1rem;
+  color: #111827;
+}
+
+.summary-card-stats-values .summary-card-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.summary-card-value .unit,
+.summary-card-stats-values .unit {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.summary-card-remaining {
+  font-size: 0.8rem;
+  color: #dc2626;
+}
+
+/* 第二类：已运动（与上面分区、不挤在一起） */
+.summary-card-exercises-block {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(249, 115, 22, 0.25);
+}
+
+.summary-card-exercises-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.summary-card-exercises {
+  font-size: 0.8rem;
+  color: #374151;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.btn-checkin {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  border-radius: 1.25rem;
+  border: none;
+  background: linear-gradient(135deg, #f97316, #ec4899);
+  color: white;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+/* ---------- 打卡弹窗（居中） ---------- */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.sheet {
+  background: white;
+  border-radius: 1.25rem;
+  width: 100%;
+  max-width: 400px;
+  max-height: 85vh;
+  overflow: auto;
+  padding: 1rem 1.25rem 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.sheet-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+
+.sheet-step p {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.sheet-buttons,
+.sheet-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.sheet-buttons button,
+.sheet-list button {
+  flex: 1;
+  min-width: 100px;
+}
+
+.amount-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.amount-row input {
+  flex: 1;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.sheet-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+/* ---------- 结果弹窗 Modal ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 101;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.modal p {
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
+}
+
+.modal button {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+/* ---------- 历史记录 History ---------- */
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.history-filters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.history-table-wrap {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.history-table th,
+.history-table td {
+  padding: 0.5rem 0.6rem;
+  text-align: center;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.history-table th {
+  background: #ffe4f1;
+  font-weight: 600;
+  color: #374151;
+}
+
+.history-row.status-low .status-cell { color: #dc2626; }
+.history-row.status-ok .status-cell { color: #ca8a04; }
+.history-row.status-great .status-cell { color: #16a34a; }
+
+.face-low { font-size: 1.2rem; }
+.face-ok { font-size: 1.2rem; }
+.face-great { font-size: 1.4rem; }
+
+.history-empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 1.5rem;
+  margin: 0;
+}
