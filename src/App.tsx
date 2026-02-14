@@ -1173,6 +1173,21 @@ function SettingsPanel({
   onSaveAll,
   saving,
 }: SettingsPanelProps) {
+  const [goalDisplay, setGoalDisplay] = useState(() => ({
+    dailyBeautyGoal: String(settings.dailyBeautyGoal ?? 0),
+    dailyUglyGoal: String(settings.dailyUglyGoal ?? 0),
+    dailyWellnessGoal: String(settings.dailyWellnessGoal ?? 0),
+  }))
+  const [exerciseNumDisplay, setExerciseNumDisplay] = useState<Record<number, string>>({})
+  const [uglyNumDisplay, setUglyNumDisplay] = useState<Record<number, string>>({})
+  const [wellnessNumDisplay, setWellnessNumDisplay] = useState<Record<number, string>>({})
+
+  useEffect(() => {
+    if (settings.dailyBeautyGoal !== undefined) setGoalDisplay((prev) => ({ ...prev, dailyBeautyGoal: String(settings.dailyBeautyGoal) }))
+    if (settings.dailyUglyGoal !== undefined) setGoalDisplay((prev) => ({ ...prev, dailyUglyGoal: String(settings.dailyUglyGoal) }))
+    if (settings.dailyWellnessGoal !== undefined) setGoalDisplay((prev) => ({ ...prev, dailyWellnessGoal: String(settings.dailyWellnessGoal) }))
+  }, [settings.dailyBeautyGoal, settings.dailyUglyGoal, settings.dailyWellnessGoal])
+
   function handleGoalChange(field: keyof Settings, value: string) {
     const numeric = Number(value)
     if (Number.isNaN(numeric)) return
@@ -1180,6 +1195,12 @@ function SettingsPanel({
       ...settings,
       [field]: numeric,
     })
+  }
+  function commitGoal(field: 'dailyBeautyGoal' | 'dailyUglyGoal' | 'dailyWellnessGoal', raw: string) {
+    const n = Number(raw)
+    const num = raw === '' || Number.isNaN(n) ? 0 : n
+    handleGoalChange(field, String(num))
+    setGoalDisplay((prev) => ({ ...prev, [field]: String(num) }))
   }
 
   function handleExerciseChange(
@@ -1335,7 +1356,7 @@ function SettingsPanel({
           <div className="settings-goals-group">
             <h3>美丽值下限</h3>
             <div className="settings-goals-row">
-              <label>日（B）<input type="number" value={settings.dailyBeautyGoal} onChange={(e) => handleGoalChange('dailyBeautyGoal', e.target.value)} /></label>
+              <label>日（B）<input type="number" value={goalDisplay.dailyBeautyGoal} onChange={(e) => setGoalDisplay((p) => ({ ...p, dailyBeautyGoal: e.target.value }))} onBlur={(e) => commitGoal('dailyBeautyGoal', e.target.value)} /></label>
               <span className="settings-goals-readonly">周：{settings.dailyBeautyGoal * 7} B</span>
               <span className="settings-goals-readonly">月：{settings.dailyBeautyGoal * daysInMonth} B</span>
             </div>
@@ -1343,7 +1364,7 @@ function SettingsPanel({
           <div className="settings-goals-group">
             <h3>丑陋值<span className="goal-upper-label">上限</span></h3>
             <div className="settings-goals-row">
-              <label>日（U）<input type="number" value={settings.dailyUglyGoal} onChange={(e) => handleGoalChange('dailyUglyGoal', e.target.value)} /></label>
+              <label>日（U）<input type="number" value={goalDisplay.dailyUglyGoal} onChange={(e) => setGoalDisplay((p) => ({ ...p, dailyUglyGoal: e.target.value }))} onBlur={(e) => commitGoal('dailyUglyGoal', e.target.value)} /></label>
               <span className="settings-goals-readonly">周：{settings.dailyUglyGoal * 7} U</span>
               <span className="settings-goals-readonly">月：{settings.dailyUglyGoal * daysInMonth} U</span>
             </div>
@@ -1351,7 +1372,7 @@ function SettingsPanel({
           <div className="settings-goals-group">
             <h3>养生值下限</h3>
             <div className="settings-goals-row">
-              <label>日（W）<input type="number" value={settings.dailyWellnessGoal} onChange={(e) => handleGoalChange('dailyWellnessGoal', e.target.value)} /></label>
+              <label>日（W）<input type="number" value={goalDisplay.dailyWellnessGoal} onChange={(e) => setGoalDisplay((p) => ({ ...p, dailyWellnessGoal: e.target.value }))} onBlur={(e) => commitGoal('dailyWellnessGoal', e.target.value)} /></label>
               <span className="settings-goals-readonly">周：{settings.dailyWellnessGoal * 7} W</span>
               <span className="settings-goals-readonly">月：{settings.dailyWellnessGoal * daysInMonth} W</span>
             </div>
@@ -1410,11 +1431,18 @@ function SettingsPanel({
                 type="number"
                 step="0.01"
                 className="input-beauty"
-                value={ex.beautyPerUnit}
+                value={exerciseNumDisplay[ex.id] ?? String(ex.beautyPerUnit)}
                 onChange={(e) => {
                   const raw = e.target.value
                   const trimmed = raw.slice(0, 4)
-                  handleExerciseChange(ex.id, 'beautyPerUnit', trimmed)
+                  setExerciseNumDisplay((p) => ({ ...p, [ex.id]: trimmed }))
+                }}
+                onBlur={(e) => {
+                  const raw = e.target.value
+                  const n = Number(raw)
+                  const num = raw === '' || Number.isNaN(n) ? 0 : n
+                  handleExerciseChange(ex.id, 'beautyPerUnit', String(num))
+                  setExerciseNumDisplay((p) => ({ ...p, [ex.id]: String(num) }))
                 }}
               />
               <button
@@ -1474,11 +1502,18 @@ function SettingsPanel({
                 type="number"
                 step="0.01"
                 className="input-beauty"
-                value={b.uglyPerUnit}
+                value={uglyNumDisplay[b.id] ?? String(b.uglyPerUnit)}
                 onChange={(e) => {
                   const raw = e.target.value
                   const trimmed = raw.slice(0, 4)
-                  handleUglyChange(b.id, 'uglyPerUnit', trimmed)
+                  setUglyNumDisplay((p) => ({ ...p, [b.id]: trimmed }))
+                }}
+                onBlur={(e) => {
+                  const raw = e.target.value
+                  const n = Number(raw)
+                  const num = raw === '' || Number.isNaN(n) ? 0 : n
+                  handleUglyChange(b.id, 'uglyPerUnit', String(num))
+                  setUglyNumDisplay((p) => ({ ...p, [b.id]: String(num) }))
                 }}
               />
               <button type="button" className="danger" onClick={() => handleRemoveUgly(b.id)}>
@@ -1535,11 +1570,18 @@ function SettingsPanel({
                 type="number"
                 step="0.01"
                 className="input-beauty"
-                value={b.wellnessPerUnit}
+                value={wellnessNumDisplay[b.id] ?? String(b.wellnessPerUnit)}
                 onChange={(e) => {
                   const raw = e.target.value
                   const trimmed = raw.slice(0, 4)
-                  handleWellnessChange(b.id, 'wellnessPerUnit', trimmed)
+                  setWellnessNumDisplay((p) => ({ ...p, [b.id]: trimmed }))
+                }}
+                onBlur={(e) => {
+                  const raw = e.target.value
+                  const n = Number(raw)
+                  const num = raw === '' || Number.isNaN(n) ? 0 : n
+                  handleWellnessChange(b.id, 'wellnessPerUnit', String(num))
+                  setWellnessNumDisplay((p) => ({ ...p, [b.id]: String(num) }))
                 }}
               />
               <button type="button" className="danger" onClick={() => handleRemoveWellness(b.id)}>
