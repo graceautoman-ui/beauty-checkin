@@ -1,8 +1,20 @@
-import type { DayStats, Entry, Settings, SummaryCard, DayStatus } from '../domain/types'
+import type { DayStats, Entry, Settings, SummaryCard, DayStatus, UglyEntry, WellnessEntry } from '../domain/types'
 
 // 计算单次打卡的美丽值，保留两位小数
 export function calcBeauty(amount: number, beautyPerUnit: number): number {
   const raw = amount * beautyPerUnit
+  return Math.round(raw * 100) / 100
+}
+
+// 计算单次变丑打卡的丑陋值，保留两位小数
+export function calcUgly(amount: number, uglyPerUnit: number): number {
+  const raw = amount * uglyPerUnit
+  return Math.round(raw * 100) / 100
+}
+
+// 计算单次养生打卡的养生值，保留两位小数
+export function calcWellness(amount: number, wellnessPerUnit: number): number {
+  const raw = amount * wellnessPerUnit
   return Math.round(raw * 100) / 100
 }
 
@@ -36,8 +48,8 @@ export function calcDayStats(entries: Entry[], settings: Settings): DayStats {
 
   const strengthSummary = summaryFromMap(strengthMap)
   const cardioSummary = summaryFromMap(cardioMap)
-  const completionRate = settings.dailyGoal > 0 ? totalBeauty / settings.dailyGoal : 0
-  const status = getStatusFromDayTotal(totalBeauty, settings.dailyGoal)
+  const completionRate = settings.dailyBeautyGoal > 0 ? totalBeauty / settings.dailyBeautyGoal : 0
+  const status = getStatusFromDayTotal(totalBeauty, settings.dailyBeautyGoal)
 
   return {
     dateKey,
@@ -80,7 +92,7 @@ export function calcTodaySummary(entries: Entry[], settings: Settings, now = new
   const todayEntries = entries.filter((e) => e.dateKey === todayKey)
   const totalBeauty = todayEntries.reduce((sum, e) => sum + e.beautyGained, 0)
 
-  const goal = settings.dailyGoal
+  const goal = settings.dailyBeautyGoal
   const completionRate = goal > 0 ? totalBeauty / goal : 0
   const remaining = Math.max(goal - totalBeauty, 0)
 
@@ -108,7 +120,7 @@ export function calcWeekSummary(entries: Entry[], settings: Settings, now = new 
   })
 
   const totalBeauty = weekEntries.reduce((sum, e) => sum + e.beautyGained, 0)
-  const goal = settings.weeklyGoal
+  const goal = settings.dailyBeautyGoal * 7
   const completionRate = goal > 0 ? totalBeauty / goal : 0
   const remaining = Math.max(goal - totalBeauty, 0)
 
@@ -133,7 +145,7 @@ export function calcMonthSummary(entries: Entry[], settings: Settings, now = new
   })
 
   const totalBeauty = monthEntries.reduce((sum, e) => sum + e.beautyGained, 0)
-  const goal = settings.monthlyGoal
+  const goal = settings.dailyBeautyGoal * daysInMonth
   const completionRate = goal > 0 ? totalBeauty / goal : 0
   const remaining = Math.max(goal - totalBeauty, 0)
 
@@ -148,6 +160,21 @@ export function calcMonthSummary(entries: Entry[], settings: Settings, now = new
     remaining,
     timeProgressRate,
   }
+}
+
+/** 健康值目标 = 美丽值目标 - 丑陋值目标 + 养生值目标（由设置计算）；周=日×7，月=日×当月天数 */
+export function getDailyHealthGoal(settings: Settings): number {
+  return settings.dailyBeautyGoal - settings.dailyUglyGoal + settings.dailyWellnessGoal
+}
+
+export function getWeeklyHealthGoal(settings: Settings): number {
+  return getDailyHealthGoal(settings) * 7
+}
+
+/** 月目标 = 日目标 × 当月天数 */
+export function getMonthlyHealthGoal(settings: Settings, now = new Date()): number {
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  return getDailyHealthGoal(settings) * daysInMonth
 }
 
 // ==== 时间工具函数 ====
@@ -198,5 +225,91 @@ function stripTime(date: Date): Date {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0)
   return d
+}
+
+// ==== 变丑打卡：今日 / 本周 / 本月汇总（结构同 SummaryCard，无目标故 goal=0） ====
+
+export function calcUglyTodaySummary(entries: UglyEntry[], now = new Date()): SummaryCard {
+  const todayKey = toDateKey(now)
+  const total = entries.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.uglyGained, 0)
+  return { label: '今日', totalBeauty: total, goal: 0, completionRate: 0, remaining: 0, timeProgressRate: 0 }
+}
+
+export function calcUglyWeekSummary(entries: UglyEntry[], now = new Date()): SummaryCard {
+  const todayKey = toDateKey(now)
+  const weekStartKey = getWeekStartDateKey(now)
+  const total = entries
+    .filter((e) => e.dateKey >= weekStartKey && e.dateKey <= todayKey)
+    .reduce((s, e) => s + e.uglyGained, 0)
+  return { label: '本周', totalBeauty: total, goal: 0, completionRate: 0, remaining: 0, timeProgressRate: 0 }
+}
+
+export function calcUglyMonthSummary(entries: UglyEntry[], now = new Date()): SummaryCard {
+  const todayKey = toDateKey(now)
+  const monthStartKey = getMonthStartDateKey(now)
+  const total = entries
+    .filter((e) => e.dateKey >= monthStartKey && e.dateKey <= todayKey)
+    .reduce((s, e) => s + e.uglyGained, 0)
+  return { label: '本月', totalBeauty: total, goal: 0, completionRate: 0, remaining: 0, timeProgressRate: 0 }
+}
+
+/** 变丑记录汇总为「行为名 数量单位」，用于变丑卡片展示 */
+export function getUglySummary(entries: UglyEntry[]): string {
+  if (entries.length === 0) return ''
+  const map = new Map<string, { amount: number; unit: string }>()
+  for (const entry of entries) {
+    const cur = map.get(entry.behaviorName)
+    if (cur) {
+      cur.amount += entry.amount
+    } else {
+      map.set(entry.behaviorName, { amount: entry.amount, unit: entry.unit })
+    }
+  }
+  return Array.from(map.entries())
+    .map(([name, { amount, unit }]) => `${name} ${amount}${unit}`)
+    .join('，')
+}
+
+// ==== 养生打卡：今日 / 本周 / 本月汇总 ====
+
+export function calcWellnessTodaySummary(entries: WellnessEntry[], now = new Date()): SummaryCard {
+  const todayKey = toDateKey(now)
+  const total = entries.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.wellnessGained, 0)
+  return { label: '今日', totalBeauty: total, goal: 0, completionRate: 0, remaining: 0, timeProgressRate: 0 }
+}
+
+export function calcWellnessWeekSummary(entries: WellnessEntry[], now = new Date()): SummaryCard {
+  const todayKey = toDateKey(now)
+  const weekStartKey = getWeekStartDateKey(now)
+  const total = entries
+    .filter((e) => e.dateKey >= weekStartKey && e.dateKey <= todayKey)
+    .reduce((s, e) => s + e.wellnessGained, 0)
+  return { label: '本周', totalBeauty: total, goal: 0, completionRate: 0, remaining: 0, timeProgressRate: 0 }
+}
+
+export function calcWellnessMonthSummary(entries: WellnessEntry[], now = new Date()): SummaryCard {
+  const todayKey = toDateKey(now)
+  const monthStartKey = getMonthStartDateKey(now)
+  const total = entries
+    .filter((e) => e.dateKey >= monthStartKey && e.dateKey <= todayKey)
+    .reduce((s, e) => s + e.wellnessGained, 0)
+  return { label: '本月', totalBeauty: total, goal: 0, completionRate: 0, remaining: 0, timeProgressRate: 0 }
+}
+
+/** 养生记录汇总为「行为名 数量单位」，用于养生卡片展示 */
+export function getWellnessSummary(entries: WellnessEntry[]): string {
+  if (entries.length === 0) return ''
+  const map = new Map<string, { amount: number; unit: string }>()
+  for (const entry of entries) {
+    const cur = map.get(entry.behaviorName)
+    if (cur) {
+      cur.amount += entry.amount
+    } else {
+      map.set(entry.behaviorName, { amount: entry.amount, unit: entry.unit })
+    }
+  }
+  return Array.from(map.entries())
+    .map(([name, { amount, unit }]) => `${name} ${amount}${unit}`)
+    .join('，')
 }
 
