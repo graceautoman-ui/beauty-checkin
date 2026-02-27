@@ -33,6 +33,25 @@ export interface WellnessBehavior {
   wellnessPerUnit: number
 }
 
+// 愉悦值：预设的主观体验类型
+export type PleasureCategory = '身体放松' | '感官享受' | '心智触动' | '创造表达' | '纯发呆' | '其他'
+
+// 每次愉悦打卡记录
+export interface PleasureEntry {
+  id: string
+  timestamp: string
+  dateKey: string
+  category: PleasureCategory
+  /** 具体活动，如 性爱 / 泡澡 / 写作 / 纯发呆 / 自定义等 */
+  activity: string
+  /** 主观强度：3/6/10 分，不按分钟计时 */
+  intensity: 3 | 6 | 10
+  /** 本次愉悦值（目前与 intensity 相同，预留扩展） */
+  score: number
+  /** 自定义备注，如当时做了什么、感受如何 */
+  note: string
+}
+
 // 每一条变丑打卡记录
 export interface UglyEntry {
   id: string

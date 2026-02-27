@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
-import type { Entry, Exercise, Settings, UglyBehavior, UglyCategory, UglyEntry, WellnessBehavior, WellnessCategory, WellnessEntry } from './domain/types'
-import { addWellnessEntry, getAllEntries, getAllUglyEntries, getAllWellnessEntries, loadExercises, loadSettings, loadUglyBehaviors, loadWellnessBehaviors, saveExercises, saveSettings, saveUglyBehaviors, saveWellnessBehaviors } from './lib/db'
+import type { Entry, Exercise, Settings, UglyBehavior, UglyCategory, UglyEntry, WellnessBehavior, WellnessCategory, WellnessEntry, PleasureEntry, PleasureCategory } from './domain/types'
+import { DEFAULT_EXERCISES } from './domain/exercises'
+import { DEFAULT_UGLY_BEHAVIORS } from './domain/uglyBehaviors'
+import { addWellnessEntry, getAllEntries, getAllUglyEntries, getAllWellnessEntries, getAllPleasureEntries, loadExercises, loadSettings, loadUglyBehaviors, loadWellnessBehaviors, saveExercises, saveSettings, saveUglyBehaviors, saveWellnessBehaviors, savePleasureEntries } from './lib/db'
+import { loadUserData, onAuthStateChange, saveUserData, supabase } from './lib/supabase'
 import {
   calcBeauty,
   calcDayStats,
@@ -27,7 +30,7 @@ import {
   toDateKey,
 } from './lib/metrics'
 
-type Tab = 'overview' | 'dashboard' | 'ugly' | 'wellness' | 'history' | 'settings'
+type Tab = 'overview' | 'dashboard' | 'ugly' | 'wellness' | 'pleasure' | 'history' | 'settings'
 
 function App() {
   const [tab, setTab] = useState<Tab>('dashboard')
@@ -39,37 +42,162 @@ function App() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [uglyEntries, setUglyEntries] = useState<UglyEntry[]>([])
   const [wellnessEntries, setWellnessEntries] = useState<WellnessEntry[]>([])
+  const [pleasureEntries, setPleasureEntries] = useState<PleasureEntry[]>([])
   const [saving, setSaving] = useState(false)
+  const [authUser, setAuthUser] = useState<{ email: string } | null>(null)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  const didInitialLoad = useRef(false)
 
   useEffect(() => {
     async function init() {
-      const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries] = await Promise.all([
-        loadExercises(),
-        loadUglyBehaviors(),
-        loadWellnessBehaviors(),
-        loadSettings(),
-        getAllEntries(),
-        getAllUglyEntries(),
-        getAllWellnessEntries(),
-      ])
-      setExercises(loadedExercises)
-      setUglyBehaviors(loadedUgly)
-      setWellnessBehaviors(loadedWellness)
-      setSettingsState(loadedSettings)
-      setEntries(loadedEntries)
-      setUglyEntries(loadedUglyEntries)
-      setWellnessEntries(loadedWellnessEntries)
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          const data = await loadUserData()
+          if (data) {
+            setExercises(data.exercises?.length ? data.exercises : DEFAULT_EXERCISES)
+            setUglyBehaviors(data.uglyBehaviors?.length ? data.uglyBehaviors : DEFAULT_UGLY_BEHAVIORS)
+            setWellnessBehaviors(data.wellnessBehaviors ?? [])
+            setSettingsState(data.settings ?? { dailyBeautyGoal: 100, dailyUglyGoal: 0, dailyWellnessGoal: 0 })
+            setEntries(data.entries ?? [])
+            setUglyEntries(data.uglyEntries ?? [])
+            setWellnessEntries(data.wellnessEntries ?? [])
+            setPleasureEntries(data.pleasureEntries ?? [])
+            setAuthUser({ email: session.user.email ?? '' })
+          } else {
+            setExercises(DEFAULT_EXERCISES)
+            setUglyBehaviors(DEFAULT_UGLY_BEHAVIORS)
+            setWellnessBehaviors([])
+            setSettingsState({ dailyBeautyGoal: 100, dailyUglyGoal: 0, dailyWellnessGoal: 0 })
+            setEntries([])
+            setUglyEntries([])
+            setWellnessEntries([])
+            setPleasureEntries([])
+            setAuthUser({ email: session.user.email ?? '' })
+          }
+        } else {
+          const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries, loadedPleasureEntries] = await Promise.all([
+            loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(),
+            getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(),
+          ])
+          setExercises(loadedExercises)
+          setUglyBehaviors(loadedUgly)
+          setWellnessBehaviors(loadedWellness)
+          setSettingsState(loadedSettings)
+          setEntries(loadedEntries)
+          setUglyEntries(loadedUglyEntries)
+          setWellnessEntries(loadedWellnessEntries)
+          setPleasureEntries(loadedPleasureEntries)
+          setAuthUser(null)
+        }
+      } else {
+        const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries, loadedPleasureEntries] = await Promise.all([
+          loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(),
+          getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(),
+        ])
+        setExercises(loadedExercises)
+        setUglyBehaviors(loadedUgly)
+        setWellnessBehaviors(loadedWellness)
+        setSettingsState(loadedSettings)
+        setEntries(loadedEntries)
+        setUglyEntries(loadedUglyEntries)
+        setWellnessEntries(loadedWellnessEntries)
+        setPleasureEntries(loadedPleasureEntries)
+        setAuthUser(null)
+      }
       setLoading(false)
+      didInitialLoad.current = true
     }
     void init()
   }, [])
+
+  useEffect(() => {
+    if (!supabase) return
+    return onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        setAuthUser({ email: session.user.email ?? '' })
+        void loadUserData().then((data) => {
+          if (data) {
+            setExercises(data.exercises?.length ? data.exercises : DEFAULT_EXERCISES)
+            setUglyBehaviors(data.uglyBehaviors?.length ? data.uglyBehaviors : DEFAULT_UGLY_BEHAVIORS)
+            setWellnessBehaviors(data.wellnessBehaviors ?? [])
+            setSettingsState(data.settings ?? { dailyBeautyGoal: 100, dailyUglyGoal: 0, dailyWellnessGoal: 0 })
+            setEntries(data.entries ?? [])
+            setUglyEntries(data.uglyEntries ?? [])
+            setWellnessEntries(data.wellnessEntries ?? [])
+            setPleasureEntries(data.pleasureEntries ?? [])
+          }
+        })
+      } else if (event === 'SIGNED_OUT') {
+        setAuthUser(null)
+        void Promise.all([loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(), getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries()]).then(
+          ([ex, ug, wel, set, ent, ue, we, pe]) => {
+            setExercises(ex)
+            setUglyBehaviors(ug)
+            setWellnessBehaviors(wel)
+            setSettingsState(set)
+            setEntries(ent)
+            setUglyEntries(ue)
+            setWellnessEntries(we)
+            setPleasureEntries(pe)
+          },
+        )
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!didInitialLoad.current || !settings) return
+    const t = setTimeout(() => {
+      if (authUser && supabase) {
+        void saveUserData({
+          settings,
+          exercises,
+          uglyBehaviors,
+          wellnessBehaviors,
+          entries,
+          uglyEntries,
+          wellnessEntries,
+          pleasureEntries,
+        })
+      } else {
+        void Promise.all([
+          saveExercises(exercises),
+          saveUglyBehaviors(uglyBehaviors),
+          saveWellnessBehaviors(wellnessBehaviors),
+          saveSettings(settings),
+          savePleasureEntries(pleasureEntries),
+        ])
+      }
+    }, 600)
+    return () => clearTimeout(t)
+  }, [authUser, exercises, settings, uglyBehaviors, wellnessBehaviors, entries, uglyEntries, wellnessEntries, pleasureEntries])
 
   async function handleSaveAll() {
     if (!settings) return
     setSaving(true)
     try {
-      await Promise.all([saveExercises(exercises), saveUglyBehaviors(uglyBehaviors), saveWellnessBehaviors(wellnessBehaviors), saveSettings(settings)])
-      // 这里后续可以加一个轻量提示，比如 toast
+      if (authUser && supabase) {
+        await saveUserData({
+          settings,
+          exercises,
+          uglyBehaviors,
+          wellnessBehaviors,
+          entries,
+          uglyEntries,
+          wellnessEntries,
+          pleasureEntries,
+        })
+      } else {
+        await Promise.all([
+          saveExercises(exercises),
+          saveUglyBehaviors(uglyBehaviors),
+          saveWellnessBehaviors(wellnessBehaviors),
+          saveSettings(settings),
+          savePleasureEntries(pleasureEntries),
+        ])
+      }
     } finally {
       setSaving(false)
     }
@@ -83,11 +211,28 @@ function App() {
     <div className="app-root">
       <header className="app-header">
         <h1>Healthy Check-in</h1>
+        {supabase && (
+          authUser ? (
+            <span className="app-auth">
+              <span className="app-auth-email">{authUser.email}</span>
+              <button type="button" className="app-auth-btn" onClick={() => supabase!.auth.signOut()}>退出</button>
+            </span>
+          ) : (
+            <button type="button" className="app-auth-btn" onClick={() => setShowAuthModal(true)}>登录 / 注册</button>
+          )
+        )}
       </header>
+      {supabase && showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => setShowAuthModal(false)}
+        />
+      )}
 
       <nav className="app-tabs">
         <button type="button" className={tab === 'dashboard' ? 'tab active' : 'tab'} onClick={() => setTab('dashboard')}>运动</button>
         <button type="button" className={tab === 'wellness' ? 'tab active tab-wellness' : 'tab tab-wellness'} onClick={() => setTab('wellness')}>养生</button>
+        <button type="button" className={tab === 'pleasure' ? 'tab active tab-pleasure' : 'tab tab-pleasure'} onClick={() => setTab('pleasure')}>愉悦</button>
         <button type="button" className={tab === 'ugly' ? 'tab active tab-ugly' : 'tab tab-ugly'} onClick={() => setTab('ugly')}>变丑</button>
         <button type="button" className={tab === 'overview' ? 'tab active tab-overview' : 'tab tab-overview'} onClick={() => setTab('overview')}>看板</button>
       </nav>
@@ -98,6 +243,7 @@ function App() {
             entries={entries}
             uglyEntries={uglyEntries}
             wellnessEntries={wellnessEntries}
+            pleasureEntries={pleasureEntries}
             settings={settings}
           />
         )}
@@ -107,6 +253,7 @@ function App() {
             setEntries={setEntries}
             exercises={exercises}
             settings={settings}
+            syncMode={!!authUser}
           />
         )}
         {tab === 'ugly' && settings && (
@@ -115,6 +262,14 @@ function App() {
             setUglyEntries={setUglyEntries}
             uglyBehaviors={uglyBehaviors}
             settings={settings}
+            syncMode={!!authUser}
+          />
+        )}
+        {tab === 'pleasure' && (
+          <PleasureDashboard
+            pleasureEntries={pleasureEntries}
+            setPleasureEntries={setPleasureEntries}
+            syncMode={!!authUser}
           />
         )}
         {tab === 'wellness' && settings && (
@@ -123,6 +278,7 @@ function App() {
             setWellnessEntries={setWellnessEntries}
             wellnessBehaviors={wellnessBehaviors}
             settings={settings}
+            syncMode={!!authUser}
           />
         )}
         {tab === 'history' && settings && (
@@ -163,12 +319,16 @@ interface OverviewDashboardProps {
   entries: Entry[]
   uglyEntries: UglyEntry[]
   wellnessEntries: WellnessEntry[]
+  pleasureEntries: PleasureEntry[]
   settings: Settings
 }
 
 type OverviewPeriod = 'today' | 'week' | 'month'
+type OverviewTab = 'summary' | 'trend'
+type TrendRange = 7 | 14 | 30
 
-function OverviewDashboard({ entries, uglyEntries, wellnessEntries, settings }: OverviewDashboardProps) {
+function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntries, settings }: OverviewDashboardProps) {
+  const [tab, setTab] = useState<OverviewTab>('summary')
   const [period, setPeriod] = useState<OverviewPeriod>('today')
   const now = new Date()
   const todayKey = toDateKey(now)
@@ -238,9 +398,220 @@ function OverviewDashboard({ entries, uglyEntries, wellnessEntries, settings }: 
   const periodIndex = period === 'today' ? 0 : period === 'week' ? 1 : 2
   const p = periods[periodIndex]
 
+  const [trendRange, setTrendRange] = useState<TrendRange>(7)
+
+  const trendData = useMemo(() => {
+    const days = trendRange
+    const list: { dateKey: string; label: string; beauty: number; pleasure: number }[] = []
+    const msPerDay = 24 * 60 * 60 * 1000
+    const today = new Date()
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today.getTime() - i * msPerDay)
+      const key = toDateKey(d)
+      const beauty = entries.filter((e) => e.dateKey === key).reduce((s, e) => s + e.beautyGained, 0)
+      const pleasure = pleasureEntries.filter((x) => x.dateKey === key).reduce((s, e) => s + e.score, 0)
+      list.push({
+        dateKey: key,
+        label: key.slice(5).replace('-', '/'),
+        beauty,
+        pleasure,
+      })
+    }
+    const maxBeauty = Math.max(0, ...list.map((d) => d.beauty))
+    const maxPleasure = Math.max(0, ...list.map((d) => d.pleasure))
+    const maxAll = Math.max(maxBeauty, maxPleasure, 1)
+    return { list, maxBeauty, maxPleasure, maxAll }
+  }, [entries, pleasureEntries, trendRange])
+
+  if (tab === 'trend') {
+    const chartWidth = 320
+    const chartHeight = 160
+    const paddingX = 20
+    const paddingY = 16
+    const len = trendData.list.length
+    const innerWidth = chartWidth - paddingX * 2
+    const innerHeight = chartHeight - paddingY * 2
+    const maxAll = trendData.maxAll || 1
+
+    const makeY = (v: number) => {
+      if (maxAll <= 0) return paddingY + innerHeight
+      const ratio = v / maxAll
+      return paddingY + innerHeight - ratio * innerHeight
+    }
+
+    const makeX = (index: number) => {
+      if (len <= 1) return paddingX + innerWidth / 2
+      return paddingX + (innerWidth * index) / (len - 1)
+    }
+
+    const baselineY = paddingY + innerHeight
+
+    const beautyPath = trendData.list.map((d, idx) => ({
+      x: makeX(idx),
+      y: makeY(d.beauty),
+    }))
+    const pleasurePath = trendData.list.map((d, idx) => ({
+      x: makeX(idx),
+      y: makeY(d.pleasure),
+    }))
+
+    const beautyLinePoints = beautyPath.map((p) => `${p.x},${p.y}`).join(' ')
+    const pleasureLinePoints = pleasurePath.map((p) => `${p.x},${p.y}`).join(' ')
+
+    const beautyAreaPoints =
+      beautyPath.length > 1
+        ? `${beautyPath.map((p) => `${p.x},${p.y}`).join(' ')} ${beautyPath[beautyPath.length - 1].x},${baselineY} ${
+            beautyPath[0].x
+          },${baselineY}`
+        : ''
+    const pleasureAreaPoints =
+      pleasurePath.length > 1
+        ? `${pleasurePath.map((p) => `${p.x},${p.y}`).join(' ')} ${
+            pleasurePath[pleasurePath.length - 1].x
+          },${baselineY} ${pleasurePath[0].x},${baselineY}`
+        : ''
+
+    const firstLabel = trendData.list[0]?.label ?? ''
+    const midLabel = len > 2 ? trendData.list[Math.floor(len / 2)].label : ''
+    const lastLabel = len > 1 ? trendData.list[len - 1].label : firstLabel
+
+    return (
+      <div className="overview-dashboard">
+        <h2 className="overview-title">趋势</h2>
+        <div className="overview-tab-switch">
+          <button type="button" className="overview-tab-pill" onClick={() => setTab('summary')}>
+            总览
+          </button>
+          <button type="button" className="overview-tab-pill active">
+            趋势
+          </button>
+        </div>
+        <div className="overview-filters">
+          <button
+            type="button"
+            className={trendRange === 7 ? 'overview-pill active' : 'overview-pill'}
+            onClick={() => setTrendRange(7)}
+          >
+            最近 7 天
+          </button>
+          <button
+            type="button"
+            className={trendRange === 14 ? 'overview-pill active' : 'overview-pill'}
+            onClick={() => setTrendRange(14)}
+          >
+            最近 2 周
+          </button>
+          <button
+            type="button"
+            className={trendRange === 30 ? 'overview-pill active' : 'overview-pill'}
+            onClick={() => setTrendRange(30)}
+          >
+            最近 30 天
+          </button>
+        </div>
+        <div className="overview-trend-card">
+          <h3 className="overview-trend-title">美丽值 & 愉悦值趋势</h3>
+          <div className="overview-trend-legend">
+            <span className="legend-item legend-beauty">美丽值 (B)</span>
+            <span className="legend-item legend-pleasure">愉悦值 (P)</span>
+          </div>
+          <svg
+            className="overview-trend-chart"
+            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+            role="img"
+          >
+            <defs>
+              <linearGradient id="trend-beauty-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#fed7aa" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#fed7aa" stopOpacity="0" />
+              </linearGradient>
+              <linearGradient id="trend-pleasure-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#c7d2fe" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#c7d2fe" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {/* 坐标参考线 */}
+            <line
+              x1={paddingX}
+              y1={paddingY + innerHeight}
+              x2={paddingX + innerWidth}
+              y2={paddingY + innerHeight}
+              stroke="#e5e7eb"
+              strokeWidth="1"
+            />
+            {/* 美丽值曲线 + 面积 */}
+            {beautyPath.length > 0 && (
+              <g className="trend-line trend-line--beauty">
+                {beautyAreaPoints && (
+                  <polygon
+                    points={beautyAreaPoints}
+                    className="overview-trend-area overview-trend-area--beauty"
+                  />
+                )}
+                <polyline
+                  points={beautyLinePoints}
+                  fill="none"
+                  className="overview-trend-line overview-trend-line--beauty"
+                />
+                {beautyPath.map((p, idx) => (
+                  <circle
+                    key={`b-${trendData.list[idx].dateKey}`}
+                    cx={p.x}
+                    cy={p.y}
+                    r={3}
+                    className="overview-trend-dot overview-trend-dot--beauty"
+                  />
+                ))}
+              </g>
+            )}
+            {/* 愉悦值曲线 + 面积 */}
+            {pleasurePath.length > 0 && (
+              <g className="trend-line trend-line--pleasure">
+                {pleasureAreaPoints && (
+                  <polygon
+                    points={pleasureAreaPoints}
+                    className="overview-trend-area overview-trend-area--pleasure"
+                  />
+                )}
+                <polyline
+                  points={pleasureLinePoints}
+                  fill="none"
+                  className="overview-trend-line overview-trend-line--pleasure"
+                />
+                {pleasurePath.map((p, idx) => (
+                  <circle
+                    key={`p-${trendData.list[idx].dateKey}`}
+                    cx={p.x}
+                    cy={p.y}
+                    r={3}
+                    className="overview-trend-dot overview-trend-dot--pleasure"
+                  />
+                ))}
+              </g>
+            )}
+          </svg>
+          <div className="overview-trend-xlabels">
+            <span className="overview-trend-xlabel">{firstLabel}</span>
+            <span className="overview-trend-xlabel">{midLabel}</span>
+            <span className="overview-trend-xlabel">{lastLabel}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="overview-dashboard">
       <h2 className="overview-title">健康行为，一目了然</h2>
+      <div className="overview-tab-switch">
+        <button type="button" className="overview-tab-pill active">
+          总览
+        </button>
+        <button type="button" className="overview-tab-pill" onClick={() => setTab('trend')}>
+          趋势
+        </button>
+      </div>
       <div className="overview-filters">
         <button type="button" className={period === 'today' ? 'overview-pill active' : 'overview-pill'} onClick={() => setPeriod('today')}>今日</button>
         <button type="button" className={period === 'week' ? 'overview-pill active' : 'overview-pill'} onClick={() => setPeriod('week')}>本周</button>
@@ -364,9 +735,10 @@ interface DashboardProps {
   setEntries: (v: Entry[]) => void
   exercises: Exercise[]
   settings: Settings
+  syncMode?: boolean
 }
 
-function Dashboard({ entries, setEntries, exercises, settings }: DashboardProps) {
+function Dashboard({ entries, setEntries, exercises, settings, syncMode }: DashboardProps) {
   const [showSheet, setShowSheet] = useState(false)
   const [resultModal, setResultModal] = useState<{
     beautyGained: number
@@ -376,6 +748,12 @@ function Dashboard({ entries, setEntries, exercises, settings }: DashboardProps)
   } | null>(null)
 
   const todayKey = toDateKey(new Date())
+  const backfillToday = new Date()
+  const backfillMaxDate = new Date(backfillToday.getTime() - 24 * 60 * 60 * 1000)
+  const backfillMinDate = new Date(backfillToday.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const backfillMaxKey = toDateKey(backfillMaxDate)
+  const backfillMinKey = toDateKey(backfillMinDate)
+  const [sheetMode, setSheetMode] = useState<'today' | 'backfill'>('today')
   const weekStartKey = getWeekStartDateKey(new Date())
   const monthStartKey = getMonthStartDateKey(new Date())
 
@@ -409,25 +787,55 @@ function Dashboard({ entries, setEntries, exercises, settings }: DashboardProps)
   const monthExerciseSummary = useMemo(() => getExerciseSummary(monthEntries), [monthEntries])
 
   async function handleRecordSubmit(entry: Entry) {
-    const { addEntry, getAllEntries } = await import('./lib/db')
-    await addEntry(entry)
-    const next = await getAllEntries()
-    setEntries(next)
-    const todayKey = toDateKey(new Date())
-    const todayTotal = next.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.beautyGained, 0)
-    setResultModal({
-      beautyGained: entry.beautyGained,
-      todayTotal,
-      dailyGoal: settings.dailyBeautyGoal,
-      achieved: todayTotal >= settings.dailyBeautyGoal,
-    })
-    setShowSheet(false)
+    if (syncMode) {
+      setEntries([...entries, entry])
+      const todayKey = toDateKey(new Date())
+      const todayTotal = entries.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.beautyGained, 0) + entry.beautyGained
+      setResultModal({
+        beautyGained: entry.beautyGained,
+        todayTotal,
+        dailyGoal: settings.dailyBeautyGoal,
+        achieved: todayTotal >= settings.dailyBeautyGoal,
+      })
+      setShowSheet(false)
+    } else {
+      const { addEntry, getAllEntries } = await import('./lib/db')
+      await addEntry(entry)
+      const next = await getAllEntries()
+      setEntries(next)
+      const todayKey = toDateKey(new Date())
+      const todayTotal = next.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.beautyGained, 0)
+      setResultModal({
+        beautyGained: entry.beautyGained,
+        todayTotal,
+        dailyGoal: settings.dailyBeautyGoal,
+        achieved: todayTotal >= settings.dailyBeautyGoal,
+      })
+      setShowSheet(false)
+    }
   }
 
   return (
     <div className="dashboard">
-      <button type="button" className="btn-checkin" onClick={() => setShowSheet(true)}>
+      <button
+        type="button"
+        className="btn-checkin"
+        onClick={() => {
+          setSheetMode('today')
+          setShowSheet(true)
+        }}
+      >
         又变美了
+      </button>
+      <button
+        type="button"
+        className="btn-backfill"
+        onClick={() => {
+          setSheetMode('backfill')
+          setShowSheet(true)
+        }}
+      >
+        补卡（最近 7 天）
       </button>
       <div className="summary-cards">
         {todaySummary && (
@@ -445,6 +853,9 @@ function Dashboard({ entries, setEntries, exercises, settings }: DashboardProps)
           exercises={exercises}
           onClose={() => setShowSheet(false)}
           onSubmit={handleRecordSubmit}
+          mode={sheetMode}
+          minDateKey={backfillMinKey}
+          maxDateKey={backfillMaxKey}
         />
       )}
       {resultModal && (
@@ -547,14 +958,21 @@ interface RecordSheetProps {
   exercises: Exercise[]
   onClose: () => void
   onSubmit: (entry: Entry) => Promise<void>
+  mode?: 'today' | 'backfill'
+  minDateKey?: string
+  maxDateKey?: string
 }
 
-function RecordSheet({ exercises, onClose, onSubmit }: RecordSheetProps) {
+function RecordSheet({ exercises, onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordSheetProps) {
   const [step, setStep] = useState(1)
   const [category, setCategory] = useState<'strength' | 'cardio' | null>(null)
   const [exercise, setExercise] = useState<Exercise | null>(null)
   const [amount, setAmount] = useState(0)
   const [submitting, setSubmitting] = useState(false)
+  const todayKey = toDateKey(new Date())
+  const [dateKey, setDateKey] = useState(() => (mode === 'backfill' && maxDateKey ? maxDateKey : todayKey))
+
+  const isBackfill = mode === 'backfill'
 
   const filtered = useMemo(
     () => (category ? exercises.filter((e) => e.category === category) : []),
@@ -563,13 +981,20 @@ function RecordSheet({ exercises, onClose, onSubmit }: RecordSheetProps) {
 
   function handleSubmit() {
     if (!exercise || amount <= 0) return
+    if (isBackfill && (!dateKey || (maxDateKey && dateKey > maxDateKey) || (minDateKey && dateKey < minDateKey))) {
+      return
+    }
     setSubmitting(true)
     const now = new Date()
+    const entryDateKey = isBackfill ? dateKey : toDateKey(now)
+    const entryTimestamp = isBackfill
+      ? new Date(`${entryDateKey}T${now.toTimeString().slice(0, 8)}`).toISOString()
+      : now.toISOString()
     const beautyGained = calcBeauty(amount, exercise.beautyPerUnit)
     const entry: Entry = {
       id: crypto.randomUUID(),
-      timestamp: now.toISOString(),
-      dateKey: toDateKey(now),
+      timestamp: entryTimestamp,
+      dateKey: entryDateKey,
       category: exercise.category,
       exerciseId: exercise.id,
       exerciseName: exercise.name,
@@ -587,12 +1012,39 @@ function RecordSheet({ exercises, onClose, onSubmit }: RecordSheetProps) {
           <span>记录运动</span>
           <button type="button" className="sheet-close" onClick={onClose}>×</button>
         </div>
+        {isBackfill && (
+          <div className="sheet-backfill-date">
+            <label>
+              补卡日期
+              <input
+                type="date"
+                value={dateKey}
+                min={minDateKey}
+                max={maxDateKey}
+                onChange={(e) => setDateKey(e.target.value)}
+              />
+            </label>
+            <span className="sheet-backfill-hint">仅可补最近 7 天，且不能选择今天。</span>
+          </div>
+        )}
         {step === 1 && (
           <div className="sheet-step">
             <p>选择类型</p>
             <div className="sheet-buttons">
-              <button type="button" onClick={() => { setCategory('strength'); setStep(2); setExercise(null); setAmount(0); }}>力量</button>
-              <button type="button" onClick={() => { setCategory('cardio'); setStep(2); setExercise(null); setAmount(0); }}>有氧</button>
+              <button
+                type="button"
+                className={category === 'strength' ? 'active' : ''}
+                onClick={() => { setCategory('strength'); setStep(2); setExercise(null); setAmount(0); }}
+              >
+                力量
+              </button>
+              <button
+                type="button"
+                className={category === 'cardio' ? 'active' : ''}
+                onClick={() => { setCategory('cardio'); setStep(2); setExercise(null); setAmount(0); }}
+              >
+                有氧
+              </button>
             </div>
           </div>
         )}
@@ -673,9 +1125,10 @@ interface UglyDashboardProps {
   setUglyEntries: (v: UglyEntry[]) => void
   uglyBehaviors: UglyBehavior[]
   settings: Settings
+  syncMode?: boolean
 }
 
-function UglyDashboard({ uglyEntries, setUglyEntries, uglyBehaviors, settings }: UglyDashboardProps) {
+function UglyDashboard({ uglyEntries, setUglyEntries, uglyBehaviors, settings, syncMode }: UglyDashboardProps) {
   const [showSheet, setShowSheet] = useState(false)
   const [resultModal, setResultModal] = useState<{ uglyGained: number; todayTotal: number } | null>(null)
 
@@ -710,20 +1163,51 @@ function UglyDashboard({ uglyEntries, setUglyEntries, uglyBehaviors, settings }:
   const weekUglySummary = useMemo(() => getUglySummary(weekUglyEntries), [weekUglyEntries])
   const monthUglySummary = useMemo(() => getUglySummary(monthUglyEntries), [monthUglyEntries])
 
+  const backfillToday = new Date()
+  const backfillMaxDate = new Date(backfillToday.getTime() - 24 * 60 * 60 * 1000)
+  const backfillMinDate = new Date(backfillToday.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const backfillMaxKey = toDateKey(backfillMaxDate)
+  const backfillMinKey = toDateKey(backfillMinDate)
+  const [sheetMode, setSheetMode] = useState<'today' | 'backfill'>('today')
+
   async function handleRecordSubmit(entry: UglyEntry) {
-    const { addUglyEntry, getAllUglyEntries } = await import('./lib/db')
-    await addUglyEntry(entry)
-    const next = await getAllUglyEntries()
-    setUglyEntries(next)
-    const todayTotal = next.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.uglyGained, 0)
-    setResultModal({ uglyGained: entry.uglyGained, todayTotal })
-    setShowSheet(false)
+    if (syncMode) {
+      setUglyEntries([...uglyEntries, entry])
+      const todayTotal = uglyEntries.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.uglyGained, 0) + entry.uglyGained
+      setResultModal({ uglyGained: entry.uglyGained, todayTotal })
+      setShowSheet(false)
+    } else {
+      const { addUglyEntry, getAllUglyEntries } = await import('./lib/db')
+      await addUglyEntry(entry)
+      const next = await getAllUglyEntries()
+      setUglyEntries(next)
+      const todayTotal = next.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.uglyGained, 0)
+      setResultModal({ uglyGained: entry.uglyGained, todayTotal })
+      setShowSheet(false)
+    }
   }
 
   return (
     <div className="dashboard dashboard-ugly">
-      <button type="button" className="btn-checkin" onClick={() => setShowSheet(true)}>
+      <button
+        type="button"
+        className="btn-checkin"
+        onClick={() => {
+          setSheetMode('today')
+          setShowSheet(true)
+        }}
+      >
         又变丑了
+      </button>
+      <button
+        type="button"
+        className="btn-backfill"
+        onClick={() => {
+          setSheetMode('backfill')
+          setShowSheet(true)
+        }}
+      >
+        补卡（最近 7 天）
       </button>
       <div className="summary-cards">
         <SummaryCardView card={todaySummary} exerciseSummary={todayUglySummary} unit="U" />
@@ -735,6 +1219,9 @@ function UglyDashboard({ uglyEntries, setUglyEntries, uglyBehaviors, settings }:
           uglyBehaviors={uglyBehaviors}
           onClose={() => setShowSheet(false)}
           onSubmit={handleRecordSubmit}
+          mode={sheetMode}
+          minDateKey={backfillMinKey}
+          maxDateKey={backfillMaxKey}
         />
       )}
       {resultModal && (
@@ -752,14 +1239,20 @@ interface RecordUglySheetProps {
   uglyBehaviors: UglyBehavior[]
   onClose: () => void
   onSubmit: (entry: UglyEntry) => Promise<void>
+  mode?: 'today' | 'backfill'
+  minDateKey?: string
+  maxDateKey?: string
 }
 
-function RecordUglySheet({ uglyBehaviors, onClose, onSubmit }: RecordUglySheetProps) {
+function RecordUglySheet({ uglyBehaviors, onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordUglySheetProps) {
   const [step, setStep] = useState(1)
   const [category, setCategory] = useState<UglyCategory | null>(null)
   const [behavior, setBehavior] = useState<UglyBehavior | null>(null)
   const [amount, setAmount] = useState(0)
   const [submitting, setSubmitting] = useState(false)
+  const todayKey = toDateKey(new Date())
+  const [dateKey, setDateKey] = useState(() => (mode === 'backfill' && maxDateKey ? maxDateKey : todayKey))
+  const isBackfill = mode === 'backfill'
 
   const filtered = useMemo(
     () => (category ? uglyBehaviors.filter((b) => b.category === category) : []),
@@ -768,13 +1261,20 @@ function RecordUglySheet({ uglyBehaviors, onClose, onSubmit }: RecordUglySheetPr
 
   function handleSubmit() {
     if (!behavior || amount <= 0) return
+    if (isBackfill && (!dateKey || (maxDateKey && dateKey > maxDateKey) || (minDateKey && dateKey < minDateKey))) {
+      return
+    }
     setSubmitting(true)
     const now = new Date()
     const uglyGained = calcUgly(amount, behavior.uglyPerUnit)
+    const entryDateKey = isBackfill ? dateKey : toDateKey(now)
+    const entryTimestamp = isBackfill
+      ? new Date(`${entryDateKey}T${now.toTimeString().slice(0, 8)}`).toISOString()
+      : now.toISOString()
     const entry: UglyEntry = {
       id: crypto.randomUUID(),
-      timestamp: now.toISOString(),
-      dateKey: toDateKey(now),
+      timestamp: entryTimestamp,
+      dateKey: entryDateKey,
       category: behavior.category,
       behaviorId: behavior.id,
       behaviorName: behavior.name,
@@ -792,12 +1292,39 @@ function RecordUglySheet({ uglyBehaviors, onClose, onSubmit }: RecordUglySheetPr
           <span>记录变丑</span>
           <button type="button" className="sheet-close" onClick={onClose}>×</button>
         </div>
+        {isBackfill && (
+          <div className="sheet-backfill-date">
+            <label>
+              补卡日期
+              <input
+                type="date"
+                value={dateKey}
+                min={minDateKey}
+                max={maxDateKey}
+                onChange={(e) => setDateKey(e.target.value)}
+              />
+            </label>
+            <span className="sheet-backfill-hint">仅可补最近 7 天，且不能选择今天。</span>
+          </div>
+        )}
         {step === 1 && (
           <div className="sheet-step">
             <p>选择类型</p>
             <div className="sheet-buttons">
-              <button type="button" onClick={() => { setCategory('身体'); setStep(2); setBehavior(null); setAmount(0); }}>身体</button>
-              <button type="button" onClick={() => { setCategory('精神'); setStep(2); setBehavior(null); setAmount(0); }}>精神</button>
+              <button
+                type="button"
+                className={category === '身体' ? 'active' : ''}
+                onClick={() => { setCategory('身体'); setStep(2); setBehavior(null); setAmount(0); }}
+              >
+                身体
+              </button>
+              <button
+                type="button"
+                className={category === '精神' ? 'active' : ''}
+                onClick={() => { setCategory('精神'); setStep(2); setBehavior(null); setAmount(0); }}
+              >
+                精神
+              </button>
             </div>
           </div>
         )}
@@ -865,9 +1392,10 @@ interface WellnessDashboardProps {
   setWellnessEntries: (v: WellnessEntry[]) => void
   wellnessBehaviors: WellnessBehavior[]
   settings: Settings
+  syncMode?: boolean
 }
 
-function WellnessDashboard({ wellnessEntries, setWellnessEntries, wellnessBehaviors, settings }: WellnessDashboardProps) {
+function WellnessDashboard({ wellnessEntries, setWellnessEntries, wellnessBehaviors, settings, syncMode }: WellnessDashboardProps) {
   const [showSheet, setShowSheet] = useState(false)
   const [resultModal, setResultModal] = useState<{ wellnessGained: number; todayTotal: number } | null>(null)
 
@@ -902,19 +1430,50 @@ function WellnessDashboard({ wellnessEntries, setWellnessEntries, wellnessBehavi
   const weekWellnessSummary = useMemo(() => getWellnessSummary(weekWellnessEntries), [weekWellnessEntries])
   const monthWellnessSummary = useMemo(() => getWellnessSummary(monthWellnessEntries), [monthWellnessEntries])
 
+  const backfillToday = new Date()
+  const backfillMaxDate = new Date(backfillToday.getTime() - 24 * 60 * 60 * 1000)
+  const backfillMinDate = new Date(backfillToday.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const backfillMaxKey = toDateKey(backfillMaxDate)
+  const backfillMinKey = toDateKey(backfillMinDate)
+  const [sheetMode, setSheetMode] = useState<'today' | 'backfill'>('today')
+
   async function handleRecordSubmit(entry: WellnessEntry) {
-    await addWellnessEntry(entry)
-    const next = await getAllWellnessEntries()
-    setWellnessEntries(next)
-    const todayTotal = next.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.wellnessGained, 0)
-    setResultModal({ wellnessGained: entry.wellnessGained, todayTotal })
-    setShowSheet(false)
+    if (syncMode) {
+      setWellnessEntries([...wellnessEntries, entry])
+      const todayTotal = wellnessEntries.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.wellnessGained, 0) + entry.wellnessGained
+      setResultModal({ wellnessGained: entry.wellnessGained, todayTotal })
+      setShowSheet(false)
+    } else {
+      await addWellnessEntry(entry)
+      const next = await getAllWellnessEntries()
+      setWellnessEntries(next)
+      const todayTotal = next.filter((e) => e.dateKey === todayKey).reduce((s, e) => s + e.wellnessGained, 0)
+      setResultModal({ wellnessGained: entry.wellnessGained, todayTotal })
+      setShowSheet(false)
+    }
   }
 
   return (
     <div className="dashboard dashboard-wellness">
-      <button type="button" className="btn-checkin" onClick={() => setShowSheet(true)}>
+      <button
+        type="button"
+        className="btn-checkin"
+        onClick={() => {
+          setSheetMode('today')
+          setShowSheet(true)
+        }}
+      >
         养生打卡
+      </button>
+      <button
+        type="button"
+        className="btn-backfill"
+        onClick={() => {
+          setSheetMode('backfill')
+          setShowSheet(true)
+        }}
+      >
+        补卡（最近 7 天）
       </button>
       <div className="summary-cards">
         <SummaryCardView card={todaySummary} exerciseSummary={todayWellnessSummary} unit="W" />
@@ -926,6 +1485,9 @@ function WellnessDashboard({ wellnessEntries, setWellnessEntries, wellnessBehavi
           wellnessBehaviors={wellnessBehaviors}
           onClose={() => setShowSheet(false)}
           onSubmit={handleRecordSubmit}
+          mode={sheetMode}
+          minDateKey={backfillMinKey}
+          maxDateKey={backfillMaxKey}
         />
       )}
       {resultModal && (
@@ -943,14 +1505,20 @@ interface RecordWellnessSheetProps {
   wellnessBehaviors: WellnessBehavior[]
   onClose: () => void
   onSubmit: (entry: WellnessEntry) => Promise<void>
+  mode?: 'today' | 'backfill'
+  minDateKey?: string
+  maxDateKey?: string
 }
 
-function RecordWellnessSheet({ wellnessBehaviors, onClose, onSubmit }: RecordWellnessSheetProps) {
+function RecordWellnessSheet({ wellnessBehaviors, onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordWellnessSheetProps) {
   const [step, setStep] = useState(1)
   const [category, setCategory] = useState<WellnessCategory | null>(null)
   const [behavior, setBehavior] = useState<WellnessBehavior | null>(null)
   const [amount, setAmount] = useState(0)
   const [submitting, setSubmitting] = useState(false)
+  const todayKey = toDateKey(new Date())
+  const [dateKey, setDateKey] = useState(() => (mode === 'backfill' && maxDateKey ? maxDateKey : todayKey))
+  const isBackfill = mode === 'backfill'
 
   const filtered = useMemo(
     () => (category ? wellnessBehaviors.filter((b) => b.category === category) : []),
@@ -959,13 +1527,20 @@ function RecordWellnessSheet({ wellnessBehaviors, onClose, onSubmit }: RecordWel
 
   function handleSubmit() {
     if (!behavior || amount <= 0) return
+    if (isBackfill && (!dateKey || (maxDateKey && dateKey > maxDateKey) || (minDateKey && dateKey < minDateKey))) {
+      return
+    }
     setSubmitting(true)
     const now = new Date()
     const wellnessGained = calcWellness(amount, behavior.wellnessPerUnit)
+    const entryDateKey = isBackfill ? dateKey : toDateKey(now)
+    const entryTimestamp = isBackfill
+      ? new Date(`${entryDateKey}T${now.toTimeString().slice(0, 8)}`).toISOString()
+      : now.toISOString()
     const entry: WellnessEntry = {
       id: crypto.randomUUID(),
-      timestamp: now.toISOString(),
-      dateKey: toDateKey(now),
+      timestamp: entryTimestamp,
+      dateKey: entryDateKey,
       category: behavior.category,
       behaviorId: behavior.id,
       behaviorName: behavior.name,
@@ -983,13 +1558,46 @@ function RecordWellnessSheet({ wellnessBehaviors, onClose, onSubmit }: RecordWel
           <span>记录养生</span>
           <button type="button" className="sheet-close" onClick={onClose}>×</button>
         </div>
+        {isBackfill && (
+          <div className="sheet-backfill-date">
+            <label>
+              补卡日期
+              <input
+                type="date"
+                value={dateKey}
+                min={minDateKey}
+                max={maxDateKey}
+                onChange={(e) => setDateKey(e.target.value)}
+              />
+            </label>
+            <span className="sheet-backfill-hint">仅可补最近 7 天，且不能选择今天。</span>
+          </div>
+        )}
         {step === 1 && (
           <div className="sheet-step">
             <p>选择类型</p>
             <div className="sheet-buttons">
-              <button type="button" onClick={() => { setCategory('补剂'); setStep(2); setBehavior(null); setAmount(0); }}>补剂</button>
-              <button type="button" onClick={() => { setCategory('身体放松'); setStep(2); setBehavior(null); setAmount(0); }}>身体放松</button>
-              <button type="button" onClick={() => { setCategory('精神放松'); setStep(2); setBehavior(null); setAmount(0); }}>精神放松</button>
+              <button
+                type="button"
+                className={category === '补剂' ? 'active' : ''}
+                onClick={() => { setCategory('补剂'); setStep(2); setBehavior(null); setAmount(0); }}
+              >
+                补剂
+              </button>
+              <button
+                type="button"
+                className={category === '身体放松' ? 'active' : ''}
+                onClick={() => { setCategory('身体放松'); setStep(2); setBehavior(null); setAmount(0); }}
+              >
+                身体放松
+              </button>
+              <button
+                type="button"
+                className={category === '精神放松' ? 'active' : ''}
+                onClick={() => { setCategory('精神放松'); setStep(2); setBehavior(null); setAmount(0); }}
+              >
+                精神放松
+              </button>
             </div>
           </div>
         )}
@@ -1020,6 +1628,407 @@ function RecordWellnessSheet({ wellnessBehaviors, onClose, onSubmit }: RecordWel
             <div className="sheet-actions">
               <button type="button" className="secondary" onClick={() => setStep(2)}>上一步</button>
               <button type="button" onClick={handleSubmit} disabled={amount <= 0 || submitting}>
+                {submitting ? '提交中…' : '完成'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ---------- 愉悦 Tab（独立愉悦值系统） ----------
+
+interface PleasureDashboardProps {
+  pleasureEntries: PleasureEntry[]
+  setPleasureEntries: (v: PleasureEntry[]) => void
+  syncMode?: boolean
+}
+
+function PleasureDashboard({ pleasureEntries, setPleasureEntries, syncMode }: PleasureDashboardProps) {
+  const [showSheet, setShowSheet] = useState(false)
+  const [sheetMode, setSheetMode] = useState<'today' | 'backfill'>('today')
+
+  const now = new Date()
+  const todayKey = toDateKey(now)
+  const weekStartKey = getWeekStartDateKey(now)
+  const monthStartKey = getMonthStartDateKey(now)
+
+  const todayList = useMemo(
+    () => pleasureEntries.filter((e) => e.dateKey === todayKey),
+    [pleasureEntries, todayKey],
+  )
+  const weekList = useMemo(
+    () => pleasureEntries.filter((e) => e.dateKey >= weekStartKey && e.dateKey <= todayKey),
+    [pleasureEntries, weekStartKey, todayKey],
+  )
+  const monthList = useMemo(
+    () => pleasureEntries.filter((e) => e.dateKey >= monthStartKey && e.dateKey <= todayKey),
+    [pleasureEntries, monthStartKey, todayKey],
+  )
+
+  const todayScore = todayList.reduce((s, e) => s + e.score, 0)
+  const weekScore = weekList.reduce((s, e) => s + e.score, 0)
+  const monthScore = monthList.reduce((s, e) => s + e.score, 0)
+
+  const backfillToday = new Date()
+  const backfillMaxDate = new Date(backfillToday.getTime() - 24 * 60 * 60 * 1000)
+  const backfillMinDate = new Date(backfillToday.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const backfillMaxKey = toDateKey(backfillMaxDate)
+  const backfillMinKey = toDateKey(backfillMinDate)
+
+  async function handleRecordSubmit(entry: PleasureEntry) {
+    if (syncMode) {
+      setPleasureEntries([...pleasureEntries, entry])
+      setShowSheet(false)
+    } else {
+      const { addPleasureEntry, getAllPleasureEntries } = await import('./lib/db')
+      await addPleasureEntry(entry)
+      const next = await getAllPleasureEntries()
+      setPleasureEntries(next)
+      setShowSheet(false)
+    }
+  }
+
+  return (
+    <div className="dashboard dashboard-pleasure">
+      <button
+        type="button"
+        className="btn-checkin"
+        onClick={() => {
+          setSheetMode('today')
+          setShowSheet(true)
+        }}
+      >
+        我的愉悦时刻
+      </button>
+      <button
+        type="button"
+        className="btn-backfill"
+        onClick={() => {
+          setSheetMode('backfill')
+          setShowSheet(true)
+        }}
+      >
+        补卡（最近 7 天）
+      </button>
+
+      <div className="summary-cards summary-cards-pleasure">
+        <div className="summary-card summary-card-pleasure">
+          <div className="summary-card-head">
+            <span className="summary-card-label">今日愉悦</span>
+          </div>
+          <div className="summary-card-main">
+            <span className="summary-card-value">
+              {todayScore}
+              <span className="unit">P</span>
+            </span>
+            <span className="summary-card-sub">{todayList.length} 次主观愉悦</span>
+          </div>
+        </div>
+        <div className="summary-card summary-card-pleasure">
+          <div className="summary-card-head">
+            <span className="summary-card-label">本周愉悦</span>
+          </div>
+          <div className="summary-card-main">
+            <span className="summary-card-value">
+              {weekScore}
+              <span className="unit">P</span>
+            </span>
+            <span className="summary-card-sub">{weekList.length} 次主观愉悦</span>
+          </div>
+        </div>
+        <div className="summary-card summary-card-pleasure">
+          <div className="summary-card-head">
+            <span className="summary-card-label">本月愉悦</span>
+          </div>
+          <div className="summary-card-main">
+            <span className="summary-card-value">
+              {monthScore}
+              <span className="unit">P</span>
+            </span>
+            <span className="summary-card-sub">{monthList.length} 次主观愉悦</span>
+          </div>
+        </div>
+      </div>
+
+      <section className="pleasure-list-section">
+        <h3>最近的愉悦瞬间</h3>
+        {pleasureEntries.length === 0 && <p className="history-empty">还没有记录，可以从今天的一小段愉悦开始。</p>}
+        {pleasureEntries.length > 0 && (
+          <ul className="pleasure-list">
+            {[...pleasureEntries].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)).slice(0, 10).map((p) => (
+              <li key={p.id} className="pleasure-item">
+                <div className="pleasure-item-main">
+                  <span className="pleasure-item-category">{p.activity || p.category}</span>
+                  <span className="pleasure-item-score">
+                    {p.score}
+                    <span className="unit">P</span>
+                  </span>
+                </div>
+                <div className="pleasure-item-sub">
+                  <span className="pleasure-item-date">{p.dateKey}</span>
+                  {p.note && <span className="pleasure-item-note">{p.note}</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {showSheet && (
+        <RecordPleasureSheet
+          mode={sheetMode}
+          minDateKey={backfillMinKey}
+          maxDateKey={backfillMaxKey}
+          onClose={() => setShowSheet(false)}
+          onSubmit={handleRecordSubmit}
+        />
+      )}
+    </div>
+  )
+}
+
+interface RecordPleasureSheetProps {
+  onClose: () => void
+  onSubmit: (entry: PleasureEntry) => Promise<void>
+  mode?: 'today' | 'backfill'
+  minDateKey?: string
+  maxDateKey?: string
+}
+
+function RecordPleasureSheet({ onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordPleasureSheetProps) {
+  const [step, setStep] = useState(1)
+  const [category, setCategory] = useState<PleasureCategory | null>(null)
+  const [activityKey, setActivityKey] = useState<string>('')
+  const [customActivity, setCustomActivity] = useState('')
+  const [intensity, setIntensity] = useState<3 | 6 | 10 | null>(null)
+  const [note, setNote] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const todayKey = toDateKey(new Date())
+  const [dateKey, setDateKey] = useState(() => (mode === 'backfill' && maxDateKey ? maxDateKey : todayKey))
+  const isBackfill = mode === 'backfill'
+
+  const activityOptions = useMemo(() => {
+    if (!category) return []
+    const base: string[] =
+      category === '身体放松'
+        ? ['性爱', '泡澡', '拉伸', '晒太阳']
+        : category === '感官享受'
+          ? ['美景', '音乐', '电影', '茶', '咖啡']
+          : category === '心智触动'
+            ? ['阅读触动', '写想法']
+            : category === '创造表达'
+              ? ['写作', '画画', '输出']
+              : category === '纯发呆'
+                ? ['纯发呆']
+                : []
+    return [...base, '其他']
+  }, [category])
+
+  const effectiveActivity = activityKey === '其他' ? customActivity.trim() : activityKey
+
+  function handleSubmit() {
+    if (!category || intensity == null || !effectiveActivity) return
+    if (isBackfill && (!dateKey || (maxDateKey && dateKey > maxDateKey) || (minDateKey && dateKey < minDateKey))) {
+      return
+    }
+    setSubmitting(true)
+    const now = new Date()
+    const entryDateKey = isBackfill ? dateKey : toDateKey(now)
+    const entryTimestamp = isBackfill
+      ? new Date(`${entryDateKey}T${now.toTimeString().slice(0, 8)}`).toISOString()
+      : now.toISOString()
+    const entry: PleasureEntry = {
+      id: crypto.randomUUID(),
+      timestamp: entryTimestamp,
+      dateKey: entryDateKey,
+      category,
+      activity: effectiveActivity,
+      intensity,
+      score: intensity,
+      note: note.trim(),
+    }
+    void onSubmit(entry).finally(() => setSubmitting(false))
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet sheet-pleasure" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-header">
+          <span>记录愉悦</span>
+          <button type="button" className="sheet-close" onClick={onClose}>×</button>
+        </div>
+        {isBackfill && (
+          <div className="sheet-backfill-date">
+            <label>
+              补卡日期
+              <input
+                type="date"
+                value={dateKey}
+                min={minDateKey}
+                max={maxDateKey}
+                onChange={(e) => setDateKey(e.target.value)}
+              />
+            </label>
+            <span className="sheet-backfill-hint">仅可补最近 7 天，且不能选择今天。</span>
+          </div>
+        )}
+        {step === 1 && (
+          <div className="sheet-step">
+            <p>选择类型（主观体验）</p>
+            <div className="sheet-buttons sheet-buttons-wrap">
+              <button
+                type="button"
+                className={category === '身体放松' ? 'active' : ''}
+                onClick={() => {
+                  setCategory('身体放松')
+                  setActivityKey('')
+                  setCustomActivity('')
+                  setStep(2)
+                }}
+              >
+                身体放松
+              </button>
+              <button
+                type="button"
+                className={category === '感官享受' ? 'active' : ''}
+                onClick={() => {
+                  setCategory('感官享受')
+                  setActivityKey('')
+                  setCustomActivity('')
+                  setStep(2)
+                }}
+              >
+                感官享受
+              </button>
+              <button
+                type="button"
+                className={category === '心智触动' ? 'active' : ''}
+                onClick={() => {
+                  setCategory('心智触动')
+                  setActivityKey('')
+                  setCustomActivity('')
+                  setStep(2)
+                }}
+              >
+                心智触动
+              </button>
+              <button
+                type="button"
+                className={category === '创造表达' ? 'active' : ''}
+                onClick={() => {
+                  setCategory('创造表达')
+                  setActivityKey('')
+                  setCustomActivity('')
+                  setStep(2)
+                }}
+              >
+                创造表达
+              </button>
+              <button
+                type="button"
+                className={category === '纯发呆' ? 'active' : ''}
+                onClick={() => {
+                  setCategory('纯发呆')
+                  setActivityKey('')
+                  setCustomActivity('')
+                  setStep(2)
+                }}
+              >
+                纯发呆
+              </button>
+              <button
+                type="button"
+                className={category === '其他' ? 'active' : ''}
+                onClick={() => {
+                  setCategory('其他')
+                  setActivityKey('')
+                  setCustomActivity('')
+                  setStep(2)
+                }}
+              >
+                其他
+              </button>
+            </div>
+          </div>
+        )}
+        {step === 2 && category && (
+          <div className="sheet-step">
+            <p>具体做了什么？</p>
+            <div className="sheet-buttons sheet-buttons-wrap">
+              {activityOptions.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  className={activityKey === opt ? 'active' : ''}
+                  onClick={() => {
+                    setActivityKey(opt)
+                    if (opt !== '其他') setCustomActivity('')
+                  }}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+            {activityKey === '其他' && (
+              <input
+                type="text"
+                className="input-note"
+                placeholder="请输入具体的愉悦活动，如：散步、发呆看天花板…"
+                maxLength={20}
+                value={customActivity}
+                onChange={(e) => setCustomActivity(e.target.value)}
+              />
+            )}
+            <p>本次愉悦的强度</p>
+            <div className="sheet-buttons sheet-buttons-wrap">
+              <button
+                type="button"
+                className={intensity === 3 ? 'active' : ''}
+                onClick={() => setIntensity(3)}
+              >
+                轻度 · 3
+              </button>
+              <button
+                type="button"
+                className={intensity === 6 ? 'active' : ''}
+                onClick={() => setIntensity(6)}
+              >
+                中度 · 6
+              </button>
+              <button
+                type="button"
+                className={intensity === 10 ? 'active' : ''}
+                onClick={() => setIntensity(10)}
+              >
+                高度 · 10
+              </button>
+            </div>
+            <p>想简单写几句当时发生了什么、有什么感觉（可选）</p>
+            <textarea
+              className="input-note"
+              rows={3}
+              maxLength={60}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="例如：晒太阳时突然觉得很放松，或者听到一首很戳心的歌…"
+            />
+            <div className="sheet-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  setStep(1)
+                  setActivityKey('')
+                  setCustomActivity('')
+                  setIntensity(null)
+                }}
+              >
+                上一步
+              </button>
+              <button type="button" onClick={handleSubmit} disabled={intensity == null || submitting || !effectiveActivity}>
                 {submitting ? '提交中…' : '完成'}
               </button>
             </div>
@@ -1600,6 +2609,66 @@ function SettingsPanel({
         <button type="button" onClick={onSaveAll} disabled={saving}>
           {saving ? '保存中…' : '保存所有设置'}
         </button>
+      </div>
+    </div>
+  )
+}
+
+interface AuthModalProps {
+  onClose: () => void
+  onSuccess: () => void
+}
+function AuthModal({ onClose, onSuccess }: AuthModalProps) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      if (mode === 'signup') {
+        const { error: err } = await supabase!.auth.signUp({ email, password })
+        if (err) throw err
+        onSuccess()
+      } else {
+        const { error: err } = await supabase!.auth.signInWithPassword({ email, password })
+        if (err) throw err
+        onSuccess()
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '操作失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose} role="presentation">
+      <div className="modal modal-auth" onClick={(e) => e.stopPropagation()} role="dialog">
+        <h3>{mode === 'signin' ? '登录' : '注册'}</h3>
+        <p className="settings-hint">登录后数据将同步到云端，电脑与手机共用同一账号即可看到相同数据。</p>
+        <form onSubmit={handleSubmit}>
+          <label>
+            邮箱
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+          </label>
+          <label>
+            密码
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} />
+          </label>
+          {error && <p className="auth-error">{error}</p>}
+          <div className="modal-actions">
+            <button type="submit" disabled={loading}>{mode === 'signin' ? '登录' : '注册'}</button>
+            <button type="button" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }} className="secondary">
+              {mode === 'signin' ? '去注册' : '去登录'}
+            </button>
+            <button type="button" onClick={onClose} className="secondary">取消</button>
+          </div>
+        </form>
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import type { Entry, Settings, Exercise, UglyBehavior, UglyEntry, WellnessBehavior, WellnessEntry } from '../domain/types'
+import type { Entry, Settings, Exercise, UglyBehavior, UglyEntry, WellnessBehavior, WellnessEntry, PleasureEntry } from '../domain/types'
 import { DEFAULT_EXERCISES } from '../domain/exercises'
 import { DEFAULT_UGLY_BEHAVIORS } from '../domain/uglyBehaviors'
 
@@ -204,6 +204,23 @@ export async function addWellnessEntry(entry: WellnessEntry): Promise<void> {
   const list = await getAllWellnessEntries()
   list.push(entry)
   await setKV('wellnessEntries', list)
+}
+
+// ---------- 愉悦打卡记录（存 KV 数组，独立于健康值公式） ----------
+
+export async function getAllPleasureEntries(): Promise<PleasureEntry[]> {
+  const stored = await getKV<PleasureEntry[]>('pleasureEntries')
+  return stored ?? []
+}
+
+export async function addPleasureEntry(entry: PleasureEntry): Promise<void> {
+  const list = await getAllPleasureEntries()
+  list.push(entry)
+  await setKV('pleasureEntries', list)
+}
+
+export async function savePleasureEntries(entries: PleasureEntry[]): Promise<void> {
+  await setKV('pleasureEntries', entries)
 }
 
 // ---------- Entries 打卡记录 ----------

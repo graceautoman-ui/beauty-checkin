@@ -15,12 +15,32 @@
 .app-header {
   text-align: center;
   margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
-
 .app-header h1 {
   font-size: 1.4rem;
   margin: 0;
   letter-spacing: 0.03em;
+}
+.app-auth {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.app-auth-email {
+  font-size: 0.85rem;
+  color: var(--muted);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-auth-btn {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
 }
 
 .app-tabs {
@@ -62,6 +82,12 @@
 .tab.tab-wellness.active {
   background: linear-gradient(135deg, #86efac, #4ade80);
   color: #14532d;
+  font-weight: 600;
+}
+
+.tab.tab-pleasure.active {
+  background: linear-gradient(135deg, #a5b4fc, #7dd3fc);
+  color: #1f2937;
   font-weight: 600;
 }
 
@@ -312,6 +338,12 @@ button:disabled {
   gap: 0.6rem;
 }
 
+.summary-cards-pleasure {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
 .summary-card {
   background: linear-gradient(135deg, #fff5f5, #fff9f5);
   border-radius: 1rem;
@@ -319,11 +351,20 @@ button:disabled {
   border: 1px solid rgba(249, 115, 22, 0.2);
 }
 
+.summary-card-pleasure {
+  background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
 .summary-card-label {
   font-size: 0.75rem;
   color: #6b7280;
   margin-bottom: 0.5rem;
   font-weight: 600;
+}
+
+.summary-card-pleasure .summary-card-label {
+  color: #4b5563;
 }
 
 /* 第一类：今日 | 目标 | 完成率 一行并列 */
@@ -366,6 +407,11 @@ button:disabled {
   font-size: 0.8rem;
   font-weight: 500;
   color: #6b7280;
+}
+
+.summary-card-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 .summary-card-remaining {
@@ -412,6 +458,23 @@ button:disabled {
   margin-top: 0.5rem;
 }
 
+.btn-backfill {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  border-radius: 999px;
+  border: none;
+  background: #e5e7eb;
+  color: #4b5563;
+  cursor: pointer;
+  margin-top: 0.45rem;
+  margin-bottom: 0.5rem;
+}
+
+.btn-backfill:hover {
+  background: #d4d4d8;
+}
+
 /* 变丑页：灰绿色调 */
 .dashboard-ugly .btn-checkin {
   background: linear-gradient(135deg, #5a6c5d, #3d4f41);
@@ -446,6 +509,12 @@ button:disabled {
   color: #14532d;
 }
 
+/* 愉悦页：温和马卡龙色调 */
+.dashboard-pleasure .btn-checkin {
+  background: linear-gradient(135deg, #a5b4fc, #e0f2fe);
+  color: #1e293b;
+}
+
 .dashboard-wellness .summary-card {
   background: linear-gradient(135deg, #f0fdf4, #dcfce7);
   border-color: rgba(34, 197, 94, 0.3);
@@ -469,6 +538,37 @@ button:disabled {
   color: #14532d;
 }
 
+.sheet-pleasure .sheet-buttons-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sheet-pleasure .sheet-buttons-wrap button {
+  flex: 1 1 calc(50% - 0.5rem);
+  border-radius: 999px;
+  border: none;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.sheet-pleasure .sheet-buttons-wrap button.active {
+  background: linear-gradient(135deg, #bfdbfe, #a5b4fc);
+  color: #111827;
+  box-shadow: 0 6px 14px rgba(129, 140, 248, 0.45);
+}
+
+.sheet-pleasure .input-note {
+  width: 100%;
+  resize: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  margin-top: 0.5rem;
+}
+
 /* ---------- 看板 Overview ---------- */
 .overview-dashboard {
   display: flex;
@@ -483,6 +583,28 @@ button:disabled {
   letter-spacing: 0.02em;
   color: #0f172a;
   text-align: center;
+}
+
+.overview-tab-switch {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.overview-tab-pill {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  border-radius: 999px;
+  border: none;
+  background: #e5e7eb;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.overview-tab-pill.active {
+  background: #0f172a;
+  color: #f9fafb;
+  font-weight: 600;
 }
 
 .overview-filters {
@@ -689,6 +811,163 @@ button:disabled {
   margin: 0;
 }
 
+.overview-trend-card {
+  margin-top: 0.75rem;
+  padding: 0.9rem 0.9rem 0.4rem;
+  border-radius: 1.1rem;
+  background: radial-gradient(circle at top left, #eef2ff 0, #f9fafb 40%, #fefce8 100%);
+  box-shadow:
+    0 18px 35px rgba(15, 23, 42, 0.14),
+    0 0 0 1px rgba(148, 163, 184, 0.22);
+}
+
+.overview-trend-title {
+  font-size: 0.9rem;
+  margin: 0 0 0.4rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
+.overview-trend-legend {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.45rem;
+}
+
+.overview-trend-chart {
+  width: 100%;
+  height: auto;
+  max-height: 210px;
+}
+
+.legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  margin-right: 0.25rem;
+}
+
+.legend-beauty::before {
+  background: #fb923c;
+}
+
+.legend-pleasure::before {
+  background: #6366f1;
+}
+
+.overview-trend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.overview-trend-row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.overview-trend-date {
+  color: #6b7280;
+}
+
+.overview-trend-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.overview-trend-bar {
+  position: relative;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.overview-trend-bar-fill {
+  display: block;
+  height: 14px;
+  border-radius: 999px;
+}
+
+.overview-trend-bar--beauty .overview-trend-bar-fill {
+  background: linear-gradient(90deg, #fed7aa, #fb923c);
+}
+
+.overview-trend-bar--pleasure .overview-trend-bar-fill {
+  background: linear-gradient(90deg, #c7d2fe, #6366f1);
+}
+
+.overview-trend-bar-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 6px;
+  color: #111827;
+}
+
+.overview-trend-xlabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.overview-trend-xlabel {
+  min-width: 0;
+}
+
+.overview-trend-area {
+  opacity: 0.22;
+}
+
+.overview-trend-area--beauty {
+  fill: url(#trend-beauty-gradient);
+}
+
+.overview-trend-area--pleasure {
+  fill: url(#trend-pleasure-gradient);
+}
+
+.overview-trend-line {
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.overview-trend-line--beauty {
+  stroke: #fb923c;
+}
+
+.overview-trend-line--pleasure {
+  stroke: #6366f1;
+}
+
+.overview-trend-dot {
+  stroke: #ffffff;
+  stroke-width: 1.2;
+}
+
+.overview-trend-dot--beauty {
+  fill: #fb923c;
+}
+
+.overview-trend-dot--pleasure {
+  fill: #6366f1;
+}
+
 .overview-metric--wellness {
   background: linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%);
   border: 1px solid rgba(34, 197, 94, 0.2);
@@ -825,6 +1104,34 @@ button:disabled {
   font-weight: 600;
 }
 
+.sheet-backfill-date {
+  margin: 0.4rem 0 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+.sheet-backfill-date label {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.sheet-backfill-date input[type='date'] {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-subtle);
+}
+
+.sheet-backfill-hint {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
 .sheet-close {
   background: none;
   border: none;
@@ -852,6 +1159,14 @@ button:disabled {
 .sheet-list button {
   flex: 1;
   min-width: 100px;
+}
+
+.sheet-buttons button.active,
+.sheet-buttons-wrap button.active,
+.sheet-list button.active {
+  background: #0f172a;
+  color: #f9fafb;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.32);
 }
 
 .amount-row {
@@ -911,6 +1226,14 @@ button:disabled {
   width: 100%;
 }
 
+.modal-auth h3 { margin-top: 0; }
+.modal-auth form { text-align: left; }
+.modal-auth label { display: block; margin-bottom: 0.75rem; }
+.modal-auth label input { width: 100%; margin-top: 0.25rem; }
+.modal-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+.modal-actions button { margin-top: 0; width: auto; }
+.auth-error { color: var(--danger, #b91c1c); font-size: 0.9rem; margin: 0.5rem 0 0; }
+
 /* ---------- 历史记录 History ---------- */
 .history {
   display: flex;
@@ -960,4 +1283,55 @@ button:disabled {
   color: #6b7280;
   padding: 1.5rem;
   margin: 0;
+}
+
+.dashboard-pleasure {
+  gap: 1rem;
+}
+
+.pleasure-list-section h3 {
+  margin: 1rem 0 0.5rem;
+}
+
+.pleasure-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pleasure-item {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.9rem;
+  background: #f9fafb;
+}
+
+.pleasure-item-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.15rem;
+}
+
+.pleasure-item-category {
+  font-size: 0.9rem;
+}
+
+.pleasure-item-score {
+  font-weight: 600;
+}
+
+.pleasure-item-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.pleasure-item-note {
+  flex: 1;
+  text-align: right;
 }
