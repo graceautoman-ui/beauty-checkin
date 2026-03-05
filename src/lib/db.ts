@@ -1,4 +1,4 @@
-import type { Entry, Settings, Exercise, UglyBehavior, UglyEntry, WellnessBehavior, WellnessEntry, PleasureEntry } from '../domain/types'
+import type { Entry, Settings, Exercise, UglyBehavior, UglyEntry, WellnessBehavior, WellnessEntry, PleasureEntry, PleasureCategoryConfig } from '../domain/types'
 import { DEFAULT_EXERCISES } from '../domain/exercises'
 import { DEFAULT_UGLY_BEHAVIORS } from '../domain/uglyBehaviors'
 
@@ -182,6 +182,10 @@ export async function addUglyEntry(entry: UglyEntry): Promise<void> {
   await setKV('uglyEntries', list)
 }
 
+export async function saveUglyEntries(list: UglyEntry[]): Promise<void> {
+  await setKV('uglyEntries', list)
+}
+
 // ---------- 养生配置（独立存储） ----------
 
 export async function loadWellnessBehaviors(): Promise<WellnessBehavior[]> {
@@ -206,6 +210,10 @@ export async function addWellnessEntry(entry: WellnessEntry): Promise<void> {
   await setKV('wellnessEntries', list)
 }
 
+export async function saveWellnessEntries(list: WellnessEntry[]): Promise<void> {
+  await setKV('wellnessEntries', list)
+}
+
 // ---------- 愉悦打卡记录（存 KV 数组，独立于健康值公式） ----------
 
 export async function getAllPleasureEntries(): Promise<PleasureEntry[]> {
@@ -223,6 +231,30 @@ export async function savePleasureEntries(entries: PleasureEntry[]): Promise<voi
   await setKV('pleasureEntries', entries)
 }
 
+// ---------- 愉悦类别配置（可在设置页增删改） ----------
+
+const DEFAULT_PLEASURE_CATEGORIES: PleasureCategoryConfig[] = [
+  { id: 1, name: '身体放松', examples: '性爱 / 泡澡 / 拉伸 / 晒太阳' },
+  { id: 2, name: '感官享受', examples: '美景 / 音乐 / 电影 / 茶 / 咖啡' },
+  { id: 3, name: '心智触动', examples: '阅读触动 / 写想法' },
+  { id: 4, name: '创造表达', examples: '写作 / 画画 / 输出' },
+  { id: 5, name: '纯发呆', examples: '什么都不做，发呆放空' },
+  { id: 6, name: '其他', examples: '自定义的愉悦活动' },
+]
+
+export async function loadPleasureCategories(): Promise<PleasureCategoryConfig[]> {
+  const stored = await getKV<PleasureCategoryConfig[]>('pleasureCategories')
+  if (stored && stored.length > 0) return stored
+  await setKV('pleasureCategories', DEFAULT_PLEASURE_CATEGORIES)
+  return DEFAULT_PLEASURE_CATEGORIES
+}
+
+export async function savePleasureCategories(categories: PleasureCategoryConfig[]): Promise<void> {
+  await setKV('pleasureCategories', categories)
+}
+
+export { DEFAULT_PLEASURE_CATEGORIES }
+
 // ---------- Entries 打卡记录 ----------
 
 export async function addEntry(entry: Entry): Promise<void> {
@@ -239,5 +271,9 @@ export async function getAllEntries(): Promise<Entry[]> {
     request.onsuccess = () => resolve(request.result as Entry[])
     request.onerror = () => reject(request.error)
   })
+}
+
+export async function deleteEntryById(id: string): Promise<void> {
+  await withStore('readwrite', ENTRIES_STORE, (store) => store.delete(id))
 }
 

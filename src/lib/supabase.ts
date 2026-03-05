@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Entry, Settings, Exercise, UglyBehavior, UglyEntry, WellnessBehavior, WellnessEntry, PleasureEntry } from '../domain/types'
+import type { Entry, Settings, Exercise, UglyBehavior, UglyEntry, WellnessBehavior, WellnessEntry, PleasureEntry, PleasureCategoryConfig } from '../domain/types'
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
@@ -17,6 +17,7 @@ export interface UserDataRow {
   ugly_entries: UglyEntry[]
   wellness_entries: WellnessEntry[]
   pleasure_entries: PleasureEntry[]
+  pleasure_categories: PleasureCategoryConfig[]
   updated_at: string
 }
 
@@ -30,6 +31,7 @@ export interface UserData {
   uglyEntries: UglyEntry[]
   wellnessEntries: WellnessEntry[]
   pleasureEntries: PleasureEntry[]
+  pleasureCategories: PleasureCategoryConfig[]
 }
 
 function rowToData(row: UserDataRow): UserData {
@@ -42,6 +44,7 @@ function rowToData(row: UserDataRow): UserData {
     uglyEntries: row.ugly_entries ?? [],
     wellnessEntries: row.wellness_entries ?? [],
     pleasureEntries: row.pleasure_entries ?? [],
+    pleasureCategories: row.pleasure_categories ?? [],
   }
 }
 
@@ -74,6 +77,7 @@ export async function saveUserData(payload: UserData): Promise<boolean> {
       ugly_entries: payload.uglyEntries,
       wellness_entries: payload.wellnessEntries,
       pleasure_entries: payload.pleasureEntries,
+      pleasure_categories: payload.pleasureCategories,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' })
   return !error

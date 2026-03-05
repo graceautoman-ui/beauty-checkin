@@ -19,6 +19,7 @@ create table if not exists public.user_data (
   ugly_entries jsonb not null default '[]',
   wellness_entries jsonb not null default '[]',
   pleasure_entries jsonb not null default '[]',
+  pleasure_categories jsonb not null default '[]',
   updated_at timestamptz not null default now()
 );
 
@@ -42,12 +43,12 @@ create policy "user_data_update_own"
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.user_data (id, settings, exercises, ugly_behaviors, wellness_behaviors, entries, ugly_entries, wellness_entries, pleasure_entries)
+  insert into public.user_data (id, settings, exercises, ugly_behaviors, wellness_behaviors, entries, ugly_entries, wellness_entries, pleasure_entries, pleasure_categories)
   values (
     new.id,
     '{"dailyBeautyGoal":100,"dailyUglyGoal":0,"dailyWellnessGoal":0}'::jsonb,
     '[]'::jsonb, '[]'::jsonb, '[]'::jsonb,
-    '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb
+    '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb
   );
   return new;
 end;
@@ -57,6 +58,9 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- 如果已经存在 user_data 表，只需要执行：
+-- ALTER TABLE public.user_data ADD COLUMN IF NOT EXISTS pleasure_categories jsonb NOT NULL DEFAULT '[]';
 ```
 
 ## 3. 本机环境变量

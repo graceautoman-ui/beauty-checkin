@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
-import type { Entry, Exercise, Settings, UglyBehavior, UglyCategory, UglyEntry, WellnessBehavior, WellnessCategory, WellnessEntry, PleasureEntry, PleasureCategory } from './domain/types'
+import type { Entry, Exercise, Settings, UglyBehavior, UglyCategory, UglyEntry, WellnessBehavior, WellnessCategory, WellnessEntry, PleasureEntry, PleasureCategory, PleasureCategoryConfig } from './domain/types'
 import { DEFAULT_EXERCISES } from './domain/exercises'
 import { DEFAULT_UGLY_BEHAVIORS } from './domain/uglyBehaviors'
-import { addWellnessEntry, getAllEntries, getAllUglyEntries, getAllWellnessEntries, getAllPleasureEntries, loadExercises, loadSettings, loadUglyBehaviors, loadWellnessBehaviors, saveExercises, saveSettings, saveUglyBehaviors, saveWellnessBehaviors, savePleasureEntries } from './lib/db'
+import { addWellnessEntry, getAllEntries, getAllUglyEntries, getAllWellnessEntries, getAllPleasureEntries, loadExercises, loadSettings, loadUglyBehaviors, loadWellnessBehaviors, loadPleasureCategories, saveExercises, saveSettings, saveUglyBehaviors, saveWellnessBehaviors, savePleasureEntries, savePleasureCategories, saveUglyEntries, saveWellnessEntries, deleteEntryById, DEFAULT_PLEASURE_CATEGORIES } from './lib/db'
 import { loadUserData, onAuthStateChange, saveUserData, supabase } from './lib/supabase'
 import {
   calcBeauty,
-  calcDayStats,
   calcMonthSummary,
   calcTodaySummary,
   calcWeekSummary,
@@ -43,6 +42,7 @@ function App() {
   const [uglyEntries, setUglyEntries] = useState<UglyEntry[]>([])
   const [wellnessEntries, setWellnessEntries] = useState<WellnessEntry[]>([])
   const [pleasureEntries, setPleasureEntries] = useState<PleasureEntry[]>([])
+  const [pleasureCategories, setPleasureCategories] = useState<PleasureCategoryConfig[]>([])
   const [saving, setSaving] = useState(false)
   const [authUser, setAuthUser] = useState<{ email: string } | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -64,6 +64,11 @@ function App() {
             setUglyEntries(data.uglyEntries ?? [])
             setWellnessEntries(data.wellnessEntries ?? [])
             setPleasureEntries(data.pleasureEntries ?? [])
+            setPleasureCategories(
+              data.pleasureCategories && data.pleasureCategories.length > 0
+                ? data.pleasureCategories
+                : DEFAULT_PLEASURE_CATEGORIES,
+            )
             setAuthUser({ email: session.user.email ?? '' })
           } else {
             setExercises(DEFAULT_EXERCISES)
@@ -74,12 +79,13 @@ function App() {
             setUglyEntries([])
             setWellnessEntries([])
             setPleasureEntries([])
+            setPleasureCategories(DEFAULT_PLEASURE_CATEGORIES)
             setAuthUser({ email: session.user.email ?? '' })
           }
         } else {
-          const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries, loadedPleasureEntries] = await Promise.all([
+          const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries, loadedPleasureEntries, loadedPleasureCategories] = await Promise.all([
             loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(),
-            getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(),
+            getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(), loadPleasureCategories(),
           ])
           setExercises(loadedExercises)
           setUglyBehaviors(loadedUgly)
@@ -89,12 +95,13 @@ function App() {
           setUglyEntries(loadedUglyEntries)
           setWellnessEntries(loadedWellnessEntries)
           setPleasureEntries(loadedPleasureEntries)
+          setPleasureCategories(loadedPleasureCategories)
           setAuthUser(null)
         }
       } else {
-        const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries, loadedPleasureEntries] = await Promise.all([
+        const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries, loadedPleasureEntries, loadedPleasureCategories] = await Promise.all([
           loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(),
-          getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(),
+          getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(), loadPleasureCategories(),
         ])
         setExercises(loadedExercises)
         setUglyBehaviors(loadedUgly)
@@ -104,6 +111,7 @@ function App() {
         setUglyEntries(loadedUglyEntries)
         setWellnessEntries(loadedWellnessEntries)
         setPleasureEntries(loadedPleasureEntries)
+        setPleasureCategories(loadedPleasureCategories)
         setAuthUser(null)
       }
       setLoading(false)
@@ -127,12 +135,17 @@ function App() {
             setUglyEntries(data.uglyEntries ?? [])
             setWellnessEntries(data.wellnessEntries ?? [])
             setPleasureEntries(data.pleasureEntries ?? [])
+            setPleasureCategories(
+              data.pleasureCategories && data.pleasureCategories.length > 0
+                ? data.pleasureCategories
+                : DEFAULT_PLEASURE_CATEGORIES,
+            )
           }
         })
       } else if (event === 'SIGNED_OUT') {
         setAuthUser(null)
-        void Promise.all([loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(), getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries()]).then(
-          ([ex, ug, wel, set, ent, ue, we, pe]) => {
+        void Promise.all([loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(), getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(), loadPleasureCategories()]).then(
+          ([ex, ug, wel, set, ent, ue, we, pe, pc]) => {
             setExercises(ex)
             setUglyBehaviors(ug)
             setWellnessBehaviors(wel)
@@ -141,6 +154,7 @@ function App() {
             setUglyEntries(ue)
             setWellnessEntries(we)
             setPleasureEntries(pe)
+            setPleasureCategories(pc)
           },
         )
       }
@@ -160,6 +174,7 @@ function App() {
           uglyEntries,
           wellnessEntries,
           pleasureEntries,
+          pleasureCategories,
         })
       } else {
         void Promise.all([
@@ -168,6 +183,7 @@ function App() {
           saveWellnessBehaviors(wellnessBehaviors),
           saveSettings(settings),
           savePleasureEntries(pleasureEntries),
+          savePleasureCategories(pleasureCategories),
         ])
       }
     }, 600)
@@ -188,6 +204,7 @@ function App() {
           uglyEntries,
           wellnessEntries,
           pleasureEntries,
+          pleasureCategories,
         })
       } else {
         await Promise.all([
@@ -196,10 +213,44 @@ function App() {
           saveWellnessBehaviors(wellnessBehaviors),
           saveSettings(settings),
           savePleasureEntries(pleasureEntries),
+          savePleasureCategories(pleasureCategories),
         ])
       }
     } finally {
       setSaving(false)
+    }
+  }
+
+  function handleDeletePleasureEntry(id: string): void {
+    const filtered = pleasureEntries.filter((p) => p.id !== id)
+    setPleasureEntries(filtered)
+    if (!authUser || !supabase) {
+      void savePleasureEntries(filtered)
+    }
+    // 登录状态下会由自动保存把最新列表同步到 Supabase
+  }
+
+  function handleDeleteExerciseEntry(id: string): void {
+    const filtered = entries.filter((e) => e.id !== id)
+    setEntries(filtered)
+    if (!authUser || !supabase) {
+      void deleteEntryById(id)
+    }
+  }
+
+  function handleDeleteUglyEntry(id: string): void {
+    const filtered = uglyEntries.filter((e) => e.id !== id)
+    setUglyEntries(filtered)
+    if (!authUser || !supabase) {
+      void saveUglyEntries(filtered)
+    }
+  }
+
+  function handleDeleteWellnessEntry(id: string): void {
+    const filtered = wellnessEntries.filter((e) => e.id !== id)
+    setWellnessEntries(filtered)
+    if (!authUser || !supabase) {
+      void saveWellnessEntries(filtered)
     }
   }
 
@@ -269,6 +320,7 @@ function App() {
           <PleasureDashboard
             pleasureEntries={pleasureEntries}
             setPleasureEntries={setPleasureEntries}
+            pleasureCategories={pleasureCategories}
             syncMode={!!authUser}
           />
         )}
@@ -286,7 +338,12 @@ function App() {
             entries={entries}
             uglyEntries={uglyEntries}
             wellnessEntries={wellnessEntries}
+            pleasureEntries={pleasureEntries}
             settings={settings}
+            onDeleteExercise={handleDeleteExerciseEntry}
+            onDeleteUgly={handleDeleteUglyEntry}
+            onDeleteWellness={handleDeleteWellnessEntry}
+            onDeletePleasure={handleDeletePleasureEntry}
           />
         )}
         {tab === 'settings' && (
@@ -297,6 +354,8 @@ function App() {
             onChangeUglyBehaviors={setUglyBehaviors}
             wellnessBehaviors={wellnessBehaviors}
             onChangeWellnessBehaviors={setWellnessBehaviors}
+            pleasureCategories={pleasureCategories}
+            onChangePleasureCategories={setPleasureCategories}
             settings={settings}
             onChangeSettings={setSettingsState}
             onSaveAll={handleSaveAll}
@@ -1643,34 +1702,14 @@ function RecordWellnessSheet({ wellnessBehaviors, onClose, onSubmit, mode = 'tod
 interface PleasureDashboardProps {
   pleasureEntries: PleasureEntry[]
   setPleasureEntries: (v: PleasureEntry[]) => void
+  pleasureCategories: PleasureCategoryConfig[]
   syncMode?: boolean
 }
 
-function PleasureDashboard({ pleasureEntries, setPleasureEntries, syncMode }: PleasureDashboardProps) {
+function PleasureDashboard({ pleasureEntries, setPleasureEntries, pleasureCategories, syncMode }: PleasureDashboardProps) {
   const [showSheet, setShowSheet] = useState(false)
   const [sheetMode, setSheetMode] = useState<'today' | 'backfill'>('today')
-
-  const now = new Date()
-  const todayKey = toDateKey(now)
-  const weekStartKey = getWeekStartDateKey(now)
-  const monthStartKey = getMonthStartDateKey(now)
-
-  const todayList = useMemo(
-    () => pleasureEntries.filter((e) => e.dateKey === todayKey),
-    [pleasureEntries, todayKey],
-  )
-  const weekList = useMemo(
-    () => pleasureEntries.filter((e) => e.dateKey >= weekStartKey && e.dateKey <= todayKey),
-    [pleasureEntries, weekStartKey, todayKey],
-  )
-  const monthList = useMemo(
-    () => pleasureEntries.filter((e) => e.dateKey >= monthStartKey && e.dateKey <= todayKey),
-    [pleasureEntries, monthStartKey, todayKey],
-  )
-
-  const todayScore = todayList.reduce((s, e) => s + e.score, 0)
-  const weekScore = weekList.reduce((s, e) => s + e.score, 0)
-  const monthScore = monthList.reduce((s, e) => s + e.score, 0)
+  const [drawText, setDrawText] = useState<string | null>(null)
 
   const backfillToday = new Date()
   const backfillMaxDate = new Date(backfillToday.getTime() - 24 * 60 * 60 * 1000)
@@ -1689,6 +1728,20 @@ function PleasureDashboard({ pleasureEntries, setPleasureEntries, syncMode }: Pl
       setPleasureEntries(next)
       setShowSheet(false)
     }
+  }
+
+  function handleDrawToday() {
+    if (pleasureEntries.length === 0) {
+      setDrawText('你还没有记录过愉悦行为，可以先去记录一条。')
+      return
+    }
+    const candidates = pleasureEntries.filter(
+      (e) => (e.activity && e.activity.trim().length > 0) || (e.category && e.category.trim().length > 0),
+    )
+    const pool = candidates.length > 0 ? candidates : pleasureEntries
+    const random = pool[Math.floor(Math.random() * pool.length)]
+    const name = (random.activity && random.activity.trim()) || random.category
+    setDrawText(`去【${name}】吧`)
   }
 
   return (
@@ -1714,44 +1767,14 @@ function PleasureDashboard({ pleasureEntries, setPleasureEntries, syncMode }: Pl
         补卡（最近 7 天）
       </button>
 
-      <div className="summary-cards summary-cards-pleasure">
-        <div className="summary-card summary-card-pleasure">
-          <div className="summary-card-head">
-            <span className="summary-card-label">今日愉悦</span>
-          </div>
-          <div className="summary-card-main">
-            <span className="summary-card-value">
-              {todayScore}
-              <span className="unit">P</span>
-            </span>
-            <span className="summary-card-sub">{todayList.length} 次主观愉悦</span>
-          </div>
-        </div>
-        <div className="summary-card summary-card-pleasure">
-          <div className="summary-card-head">
-            <span className="summary-card-label">本周愉悦</span>
-          </div>
-          <div className="summary-card-main">
-            <span className="summary-card-value">
-              {weekScore}
-              <span className="unit">P</span>
-            </span>
-            <span className="summary-card-sub">{weekList.length} 次主观愉悦</span>
-          </div>
-        </div>
-        <div className="summary-card summary-card-pleasure">
-          <div className="summary-card-head">
-            <span className="summary-card-label">本月愉悦</span>
-          </div>
-          <div className="summary-card-main">
-            <span className="summary-card-value">
-              {monthScore}
-              <span className="unit">P</span>
-            </span>
-            <span className="summary-card-sub">{monthList.length} 次主观愉悦</span>
-          </div>
-        </div>
-      </div>
+      <section className="pleasure-draw-section">
+        <h3>今日抽签</h3>
+        <p className="settings-hint">从你历史的愉悦记录里，随机抽一条今天的灵感。</p>
+        <button type="button" className="btn-draw" onClick={handleDrawToday}>
+          点我抽签
+        </button>
+        {drawText && <p className="pleasure-draw-result">{drawText}</p>}
+      </section>
 
       <section className="pleasure-list-section">
         <h3>最近的愉悦瞬间</h3>
@@ -1779,6 +1802,7 @@ function PleasureDashboard({ pleasureEntries, setPleasureEntries, syncMode }: Pl
 
       {showSheet && (
         <RecordPleasureSheet
+          pleasureCategories={pleasureCategories}
           mode={sheetMode}
           minDateKey={backfillMinKey}
           maxDateKey={backfillMaxKey}
@@ -1791,6 +1815,7 @@ function PleasureDashboard({ pleasureEntries, setPleasureEntries, syncMode }: Pl
 }
 
 interface RecordPleasureSheetProps {
+  pleasureCategories: PleasureCategoryConfig[]
   onClose: () => void
   onSubmit: (entry: PleasureEntry) => Promise<void>
   mode?: 'today' | 'backfill'
@@ -1798,7 +1823,7 @@ interface RecordPleasureSheetProps {
   maxDateKey?: string
 }
 
-function RecordPleasureSheet({ onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordPleasureSheetProps) {
+function RecordPleasureSheet({ pleasureCategories, onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordPleasureSheetProps) {
   const [step, setStep] = useState(1)
   const [category, setCategory] = useState<PleasureCategory | null>(null)
   const [activityKey, setActivityKey] = useState<string>('')
@@ -1812,6 +1837,7 @@ function RecordPleasureSheet({ onClose, onSubmit, mode = 'today', minDateKey, ma
 
   const activityOptions = useMemo(() => {
     if (!category) return []
+    const cfg = pleasureCategories.find((c) => c.name === category)
     const base: string[] =
       category === '身体放松'
         ? ['性爱', '泡澡', '拉伸', '晒太阳']
@@ -1823,7 +1849,9 @@ function RecordPleasureSheet({ onClose, onSubmit, mode = 'today', minDateKey, ma
               ? ['写作', '画画', '输出']
               : category === '纯发呆'
                 ? ['纯发呆']
-                : []
+                : cfg && cfg.examples
+                  ? cfg.examples.split('/').map((s) => s.trim()).filter(Boolean)
+                  : []
     return [...base, '其他']
   }, [category])
 
@@ -2065,11 +2093,27 @@ interface HistoryProps {
   entries: Entry[]
   uglyEntries: UglyEntry[]
   wellnessEntries: WellnessEntry[]
+  pleasureEntries: PleasureEntry[]
   settings: Settings
+  onDeleteExercise: (id: string) => void
+  onDeleteUgly: (id: string) => void
+  onDeleteWellness: (id: string) => void
+  onDeletePleasure: (id: string) => void
 }
 
-function History({ entries, uglyEntries, wellnessEntries, settings }: HistoryProps) {
+function History({
+  entries,
+  uglyEntries,
+  wellnessEntries,
+  pleasureEntries,
+  settings: _settings,
+  onDeleteExercise,
+  onDeleteUgly,
+  onDeleteWellness,
+  onDeletePleasure,
+}: HistoryProps) {
   const [period, setPeriod] = useState<'week' | 'month'>('week')
+  const [view, setView] = useState<'exercise' | 'wellness' | 'ugly' | 'pleasure'>('exercise')
   const now = new Date()
   const todayKey = toDateKey(now)
   const weekStart = getWeekStartDateKey(now)
@@ -2087,72 +2131,270 @@ function History({ entries, uglyEntries, wellnessEntries, settings }: HistoryPro
     () => wellnessEntries.filter((e) => e.dateKey >= startKey && e.dateKey <= todayKey),
     [wellnessEntries, startKey, todayKey],
   )
-  const byDay = useMemo(() => {
-    const map = new Map<string, Entry[]>()
-    for (const e of filtered) {
-      const list = map.get(e.dateKey) ?? []
-      list.push(e)
-      map.set(e.dateKey, list)
-    }
-    return Array.from(map.entries())
-      .map(([, list]) => calcDayStats(list, settings))
-      .sort((a, b) => b.dateKey.localeCompare(a.dateKey))
-  }, [filtered, settings])
+  const filteredPleasure = useMemo(
+    () => pleasureEntries.filter((e) => e.dateKey >= startKey && e.dateKey <= todayKey),
+    [pleasureEntries, startKey, todayKey],
+  )
+
+  const beautyList = useMemo(
+    () => [...filtered].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)),
+    [filtered],
+  )
+
+  const uglyList = useMemo(
+    () => [...filteredUgly].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)),
+    [filteredUgly],
+  )
+
+  const wellnessList = useMemo(
+    () => [...filteredWellness].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)),
+    [filteredWellness],
+  )
+
+  const pleasureList = useMemo(
+    () => [...filteredPleasure].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)),
+    [filteredPleasure],
+  )
 
   return (
     <div className="history">
       <div className="history-filters">
-        <button type="button" className={period === 'week' ? 'tab active' : 'tab'} onClick={() => setPeriod('week')}>本周</button>
-        <button type="button" className={period === 'month' ? 'tab active' : 'tab'} onClick={() => setPeriod('month')}>本月</button>
+        <button type="button" className={period === 'week' ? 'tab active' : 'tab'} onClick={() => setPeriod('week')}>
+          本周
+        </button>
+        <button type="button" className={period === 'month' ? 'tab active' : 'tab'} onClick={() => setPeriod('month')}>
+          本月
+        </button>
       </div>
-      <div className="history-table-wrap">
-        <table className="history-table">
-          <thead>
-            <tr>
-              <th>日期</th>
-              <th>状态</th>
-              <th>健康值(H)</th>
-              <th>力量运动</th>
-              <th>有氧运动</th>
-              <th>美丽值</th>
-              <th>丑陋行为</th>
-              <th>丑陋值</th>
-              <th>养生行为</th>
-              <th>养生值</th>
-            </tr>
-          </thead>
-          <tbody>
-            {byDay.map((day) => {
-              const dayUgly = filteredUgly.filter((e) => e.dateKey === day.dateKey)
-              const dayWellness = filteredWellness.filter((e) => e.dateKey === day.dateKey)
-              const uglySummary = getUglySummary(dayUgly)
-              const uglyTotal = dayUgly.reduce((s, e) => s + e.uglyGained, 0)
-              const wellnessSummary = getWellnessSummary(dayWellness)
-              const wellnessTotal = dayWellness.reduce((s, e) => s + e.wellnessGained, 0)
-              const healthValue = Math.round((day.totalBeauty - uglyTotal + wellnessTotal) * 100) / 100
-              const dailyHealthGoal = getDailyHealthGoal(settings)
-              const achieved = dailyHealthGoal <= 0 || healthValue >= dailyHealthGoal
-              return (
-                <tr key={day.dateKey} className={`history-row status-${achieved ? 'achieved' : 'not-achieved'}`}>
-                  <td>{day.dateKey.slice(5).replace('-', '/')}</td>
-                  <td className="status-cell">
-                    {achieved ? <span className="face face-ok" title="达成">😊</span> : <span className="face face-low" title="未达成">😢</span>}
-                  </td>
-                  <td>{healthValue}</td>
-                  <td>{day.strengthSummary || '—'}</td>
-                  <td>{day.cardioSummary || '—'}</td>
-                  <td>{day.totalBeauty}</td>
-                  <td>{uglySummary || '—'}</td>
-                  <td>{uglyTotal > 0 ? uglyTotal : '—'}</td>
-                  <td>{wellnessSummary || '—'}</td>
-                  <td>{wellnessTotal > 0 ? wellnessTotal : '—'}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        {byDay.length === 0 && <p className="history-empty">暂无记录</p>}
-      </div>
+
+      <nav className="history-type-tabs">
+        <button
+          type="button"
+          className={view === 'exercise' ? 'tab active' : 'tab'}
+          onClick={() => setView('exercise')}
+        >
+          运动
+        </button>
+        <button
+          type="button"
+          className={view === 'wellness' ? 'tab active' : 'tab'}
+          onClick={() => setView('wellness')}
+        >
+          养生
+        </button>
+        <button
+          type="button"
+          className={view === 'ugly' ? 'tab active' : 'tab'}
+          onClick={() => setView('ugly')}
+        >
+          变丑
+        </button>
+        <button
+          type="button"
+          className={view === 'pleasure' ? 'tab active' : 'tab'}
+          onClick={() => setView('pleasure')}
+        >
+          愉悦
+        </button>
+      </nav>
+
+      {view === 'exercise' && (
+        <section className="history-section">
+          <h2>运动历史</h2>
+          {beautyList.length === 0 && <p className="history-empty">本{period === 'week' ? '周' : '月'}暂无运动记录。</p>}
+          {beautyList.length > 0 && (
+            <div className="history-table-wrap">
+              <table className="history-table">
+                <thead>
+                  <tr>
+                    <th>日期</th>
+                    <th>类型</th>
+                    <th>运动</th>
+                    <th>数量</th>
+                    <th>美丽值(B)</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {beautyList.map((e) => (
+                    <tr key={e.id}>
+                      <td>{e.dateKey.slice(5).replace('-', '/')}</td>
+                      <td>{e.category === 'strength' ? '力量' : '有氧'}</td>
+                      <td>{e.exerciseName}</td>
+                      <td>
+                        {e.amount}
+                        {e.unit}
+                      </td>
+                      <td>{e.beautyGained}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="link-button danger"
+                          onClick={() => {
+                            if (window.confirm('确定要删除这条运动记录吗？')) {
+                              onDeleteExercise(e.id)
+                            }
+                          }}
+                        >
+                          删除
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {view === 'wellness' && (
+        <section className="history-section">
+          <h2>养生历史</h2>
+          {wellnessList.length === 0 && <p className="history-empty">本{period === 'week' ? '周' : '月'}暂无养生记录。</p>}
+          {wellnessList.length > 0 && (
+            <div className="history-table-wrap">
+              <table className="history-table">
+                <thead>
+                  <tr>
+                    <th>日期</th>
+                    <th>类型</th>
+                    <th>行为</th>
+                    <th>数量</th>
+                    <th>养生值(W)</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {wellnessList.map((e) => (
+                    <tr key={e.id}>
+                      <td>{e.dateKey.slice(5).replace('-', '/')}</td>
+                      <td>{e.category}</td>
+                      <td>{e.behaviorName}</td>
+                      <td>
+                        {e.amount}
+                        {e.unit}
+                      </td>
+                      <td>{e.wellnessGained}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="link-button danger"
+                          onClick={() => {
+                            if (window.confirm('确定要删除这条养生记录吗？')) {
+                              onDeleteWellness(e.id)
+                            }
+                          }}
+                        >
+                          删除
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {view === 'ugly' && (
+        <section className="history-section">
+          <h2>变丑历史</h2>
+          {uglyList.length === 0 && <p className="history-empty">本{period === 'week' ? '周' : '月'}暂无变丑记录。</p>}
+          {uglyList.length > 0 && (
+            <div className="history-table-wrap">
+              <table className="history-table">
+                <thead>
+                  <tr>
+                    <th>日期</th>
+                    <th>类型</th>
+                    <th>行为</th>
+                    <th>数量</th>
+                    <th>丑陋值(U)</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {uglyList.map((e) => (
+                    <tr key={e.id}>
+                      <td>{e.dateKey.slice(5).replace('-', '/')}</td>
+                      <td>{e.category}</td>
+                      <td>{e.behaviorName}</td>
+                      <td>
+                        {e.amount}
+                        {e.unit}
+                      </td>
+                      <td>{e.uglyGained}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="link-button danger"
+                          onClick={() => {
+                            if (window.confirm('确定要删除这条变丑记录吗？')) {
+                              onDeleteUgly(e.id)
+                            }
+                          }}
+                        >
+                          删除
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {view === 'pleasure' && (
+        <section className="history-pleasure-section">
+          <h2>愉悦历史</h2>
+          <p className="settings-hint">范围随上方选择（本周 / 本月），可删除单条记录。</p>
+          {pleasureList.length === 0 && <p className="history-empty">本{period === 'week' ? '周' : '月'}暂无愉悦记录。</p>}
+          {pleasureList.length > 0 && (
+            <div className="history-table-wrap">
+              <table className="history-table history-table-pleasure">
+                <thead>
+                  <tr>
+                    <th>日期</th>
+                    <th>类别</th>
+                    <th>活动</th>
+                    <th>强度(P)</th>
+                    <th>备注</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pleasureList.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.dateKey.slice(5).replace('-', '/')}</td>
+                      <td>{p.category}</td>
+                      <td>{p.activity}</td>
+                      <td>{p.score}</td>
+                      <td>{p.note || '—'}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="link-button danger"
+                          onClick={() => {
+                            if (window.confirm('确定要删除这条愉悦记录吗？')) {
+                              onDeletePleasure(p.id)
+                            }
+                          }}
+                        >
+                          删除
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   )
 }
@@ -2164,6 +2406,8 @@ interface SettingsPanelProps {
   onChangeUglyBehaviors: (value: UglyBehavior[]) => void
   wellnessBehaviors: WellnessBehavior[]
   onChangeWellnessBehaviors: (value: WellnessBehavior[]) => void
+  pleasureCategories: PleasureCategoryConfig[]
+  onChangePleasureCategories: (value: PleasureCategoryConfig[]) => void
   settings: Settings
   onChangeSettings: (value: Settings) => void
   onSaveAll: () => void
@@ -2177,6 +2421,8 @@ function SettingsPanel({
   onChangeUglyBehaviors,
   wellnessBehaviors,
   onChangeWellnessBehaviors,
+  pleasureCategories,
+  onChangePleasureCategories,
   settings,
   onChangeSettings,
   onSaveAll,
@@ -2190,6 +2436,7 @@ function SettingsPanel({
   const [exerciseNumDisplay, setExerciseNumDisplay] = useState<Record<number, string>>({})
   const [uglyNumDisplay, setUglyNumDisplay] = useState<Record<number, string>>({})
   const [wellnessNumDisplay, setWellnessNumDisplay] = useState<Record<number, string>>({})
+  const [pleasureCategoryExamples, setPleasureCategoryExamples] = useState<Record<number, string>>({})
 
   useEffect(() => {
     if (settings.dailyBeautyGoal !== undefined) setGoalDisplay((prev) => ({ ...prev, dailyBeautyGoal: String(settings.dailyBeautyGoal) }))
@@ -2318,7 +2565,31 @@ function SettingsPanel({
     onChangeWellnessBehaviors(wellnessBehaviors.filter((b) => b.id !== id))
   }
 
-  type SettingsTab = 'goal' | 'beauty' | 'ugly' | 'wellness'
+  function handlePleasureCategoryChange(id: number, field: keyof PleasureCategoryConfig, value: string) {
+    onChangePleasureCategories(
+      pleasureCategories.map((c) => {
+        if (c.id !== id) return c
+        if (field === 'examples') {
+          setPleasureCategoryExamples((prev) => ({ ...prev, [id]: value }))
+        }
+        return { ...c, [field]: value }
+      }),
+    )
+  }
+
+  function handleAddPleasureCategory() {
+    const maxId = pleasureCategories.reduce((max, c) => Math.max(max, c.id), 0)
+    onChangePleasureCategories([
+      ...pleasureCategories,
+      { id: maxId + 1, name: '', examples: '' },
+    ])
+  }
+
+  function handleRemovePleasureCategory(id: number) {
+    onChangePleasureCategories(pleasureCategories.filter((c) => c.id !== id))
+  }
+
+  type SettingsTab = 'goal' | 'beauty' | 'ugly' | 'wellness' | 'pleasure'
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('goal')
 
   return (
@@ -2351,6 +2622,13 @@ function SettingsPanel({
           onClick={() => setSettingsTab('wellness')}
         >
           养生
+        </button>
+        <button
+          type="button"
+          className={settingsTab === 'pleasure' ? 'tab active' : 'tab'}
+          onClick={() => setSettingsTab('pleasure')}
+        >
+          愉悦
         </button>
       </nav>
 
@@ -2601,6 +2879,46 @@ function SettingsPanel({
         </div>
         <button type="button" onClick={handleAddWellness} className="secondary">
           新增行为
+        </button>
+      </section>
+      )}
+
+      {settingsTab === 'pleasure' && (
+      <section className="settings-section">
+        <h2>愉悦配置（类别 / 例子说明）</h2>
+        <p className="settings-hint">这里可以增删改愉悦类别，比如身体放松 / 感官享受等，用于愉悦打卡的第一层大类。</p>
+        <div className="exercise-table">
+          <div className="exercise-row exercise-row--header">
+            <span>类别名称</span>
+            <span>例子说明</span>
+            <span />
+          </div>
+          {pleasureCategories.map((c) => (
+            <div key={c.id} className="exercise-row">
+              <input
+                type="text"
+                className="input-name"
+                value={c.name}
+                placeholder="如：身体放松"
+                maxLength={6}
+                onChange={(e) => handlePleasureCategoryChange(c.id, 'name', e.target.value)}
+              />
+              <input
+                type="text"
+                className="input-unit"
+                value={pleasureCategoryExamples[c.id] ?? c.examples}
+                placeholder="如：泡澡 / 拉伸 / 晒太阳"
+                maxLength={30}
+                onChange={(e) => handlePleasureCategoryChange(c.id, 'examples', e.target.value)}
+              />
+              <button type="button" className="danger" onClick={() => handleRemovePleasureCategory(c.id)}>
+                删除
+              </button>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={handleAddPleasureCategory} className="secondary">
+          新增愉悦类别
         </button>
       </section>
       )}

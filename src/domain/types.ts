@@ -52,6 +52,15 @@ export interface PleasureEntry {
   note: string
 }
 
+// 可配置的愉悦类别（用于设置页）
+export interface PleasureCategoryConfig {
+  id: number
+  /** 类别名称，如「身体放松」「感官享受」 */
+  name: string
+  /** 例子说明，如「性爱 / 泡澡 / 拉伸 / 晒太阳」 */
+  examples: string
+}
+
 // 每一条变丑打卡记录
 export interface UglyEntry {
   id: string
