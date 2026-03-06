@@ -1021,8 +1021,7 @@ interface RecordSheetProps {
 }
 
 function RecordSheet({ exercises, onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordSheetProps) {
-  const [step, setStep] = useState(1)
-  const [category, setCategory] = useState<'strength' | 'cardio' | null>(null)
+  const [category, setCategory] = useState<'strength' | 'cardio' | null>('strength')
   const [exercise, setExercise] = useState<Exercise | null>(null)
   const [amount, setAmount] = useState(0)
   const [submitting, setSubmitting] = useState(false)
@@ -1084,58 +1083,73 @@ function RecordSheet({ exercises, onClose, onSubmit, mode = 'today', minDateKey,
             <span className="sheet-backfill-hint">仅可补最近 7 天，且不能选择今天。</span>
           </div>
         )}
-        {step === 1 && (
-          <div className="sheet-step">
-            <p>选择类型</p>
-            <div className="sheet-buttons">
+        <div className="sheet-step">
+          <p>选择类型</p>
+          <div className="sheet-buttons">
+            <button
+              type="button"
+              className={category === 'strength' ? 'active' : ''}
+              onClick={() => {
+                setCategory('strength')
+                setExercise(null)
+                setAmount(0)
+              }}
+            >
+              力量
+            </button>
+            <button
+              type="button"
+              className={category === 'cardio' ? 'active' : ''}
+              onClick={() => {
+                setCategory('cardio')
+                setExercise(null)
+                setAmount(0)
+              }}
+            >
+              有氧
+            </button>
+          </div>
+
+          <p>选择运动</p>
+          <div className="sheet-list">
+            {filtered.map((ex) => (
               <button
+                key={ex.id}
                 type="button"
-                className={category === 'strength' ? 'active' : ''}
-                onClick={() => { setCategory('strength'); setStep(2); setExercise(null); setAmount(0); }}
+                className={exercise && exercise.id === ex.id ? 'active' : ''}
+                onClick={() => {
+                  setExercise(ex)
+                  setAmount(0)
+                }}
               >
-                力量
+                {ex.name}（{ex.unit}）
               </button>
-              <button
-                type="button"
-                className={category === 'cardio' ? 'active' : ''}
-                onClick={() => { setCategory('cardio'); setStep(2); setExercise(null); setAmount(0); }}
-              >
-                有氧
-              </button>
-            </div>
+            ))}
+            {filtered.length === 0 && <p className="settings-hint">该类型下暂无运动，请先在设置里添加。</p>}
           </div>
-        )}
-        {step === 2 && (
-          <div className="sheet-step">
-            <p>选择运动</p>
-            <div className="sheet-list">
-              {filtered.map((ex) => (
-                <button key={ex.id} type="button" onClick={() => { setExercise(ex); setStep(3); setAmount(0); }}>
-                  {ex.name}（{ex.unit}）
-                </button>
-              ))}
-            </div>
-            <button type="button" className="secondary" onClick={() => setStep(1)}>上一步</button>
+
+          {exercise && (
+            <>
+              <p>{exercise.name} · 单位：{exercise.unit}</p>
+              <div className="amount-row">
+                <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 10))}>-10</button>
+                <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 1))}>-1</button>
+                <input type="number" min={0} value={amount || ''} onChange={(e) => setAmount(Number(e.target.value) || 0)} />
+                <button type="button" onClick={() => setAmount((a) => a + 1)}>+1</button>
+                <button type="button" onClick={() => setAmount((a) => a + 10)}>+10</button>
+              </div>
+            </>
+          )}
+
+          <div className="sheet-actions">
+            <button type="button" className="secondary" onClick={onClose}>
+              取消
+            </button>
+            <button type="button" onClick={handleSubmit} disabled={!exercise || amount <= 0 || submitting}>
+              {submitting ? '提交中…' : '完成'}
+            </button>
           </div>
-        )}
-        {step === 3 && exercise && (
-          <div className="sheet-step">
-            <p>{exercise.name} · 单位：{exercise.unit}</p>
-            <div className="amount-row">
-              <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 10))}>-10</button>
-              <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 1))}>-1</button>
-              <input type="number" min={0} value={amount || ''} onChange={(e) => setAmount(Number(e.target.value) || 0)} />
-              <button type="button" onClick={() => setAmount((a) => a + 1)}>+1</button>
-              <button type="button" onClick={() => setAmount((a) => a + 10)}>+10</button>
-            </div>
-            <div className="sheet-actions">
-              <button type="button" className="secondary" onClick={() => setStep(2)}>上一步</button>
-              <button type="button" onClick={handleSubmit} disabled={amount <= 0 || submitting}>
-                {submitting ? '提交中…' : '完成'}
-              </button>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )
@@ -1302,8 +1316,7 @@ interface RecordUglySheetProps {
 }
 
 function RecordUglySheet({ uglyBehaviors, onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordUglySheetProps) {
-  const [step, setStep] = useState(1)
-  const [category, setCategory] = useState<UglyCategory | null>(null)
+  const [category, setCategory] = useState<UglyCategory | null>('身体')
   const [behavior, setBehavior] = useState<UglyBehavior | null>(null)
   const [amount, setAmount] = useState(0)
   const [submitting, setSubmitting] = useState(false)
@@ -1364,59 +1377,73 @@ function RecordUglySheet({ uglyBehaviors, onClose, onSubmit, mode = 'today', min
             <span className="sheet-backfill-hint">仅可补最近 7 天，且不能选择今天。</span>
           </div>
         )}
-        {step === 1 && (
-          <div className="sheet-step">
-            <p>选择类型</p>
-            <div className="sheet-buttons">
-              <button
-                type="button"
-                className={category === '身体' ? 'active' : ''}
-                onClick={() => { setCategory('身体'); setStep(2); setBehavior(null); setAmount(0); }}
-              >
-                身体
-              </button>
-              <button
-                type="button"
-                className={category === '精神' ? 'active' : ''}
-                onClick={() => { setCategory('精神'); setStep(2); setBehavior(null); setAmount(0); }}
-              >
-                精神
-              </button>
-            </div>
+        <div className="sheet-step">
+          <p>选择类型</p>
+          <div className="sheet-buttons">
+            <button
+              type="button"
+              className={category === '身体' ? 'active' : ''}
+              onClick={() => {
+                setCategory('身体')
+                setBehavior(null)
+                setAmount(0)
+              }}
+            >
+              身体
+            </button>
+            <button
+              type="button"
+              className={category === '精神' ? 'active' : ''}
+              onClick={() => {
+                setCategory('精神')
+                setBehavior(null)
+                setAmount(0)
+              }}
+            >
+              精神
+            </button>
           </div>
-        )}
-        {step === 2 && (
-          <div className="sheet-step">
-            <p>选择行为</p>
-            <div className="sheet-list">
-              {filtered.map((b) => (
-                <button key={b.id} type="button" onClick={() => { setBehavior(b); setStep(3); setAmount(0); }}>
-                  {b.name}（{b.unit}）
-                </button>
-              ))}
-            </div>
+
+          <p>选择行为</p>
+          <div className="sheet-list">
+            {filtered.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                className={behavior && behavior.id === b.id ? 'active' : ''}
+                onClick={() => {
+                  setBehavior(b)
+                  setAmount(0)
+                }}
+              >
+                {b.name}（{b.unit}）
+              </button>
+            ))}
             {filtered.length === 0 && <p className="settings-hint">该类型下暂无行为，请先在设置里添加。</p>}
-            <button type="button" className="secondary" onClick={() => setStep(1)}>上一步</button>
           </div>
-        )}
-        {step === 3 && behavior && (
-          <div className="sheet-step">
-            <p>{behavior.name} · 单位：{behavior.unit}</p>
-            <div className="amount-row">
-              <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 10))}>-10</button>
-              <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 1))}>-1</button>
-              <input type="number" min={0} value={amount || ''} onChange={(e) => setAmount(Number(e.target.value) || 0)} />
-              <button type="button" onClick={() => setAmount((a) => a + 1)}>+1</button>
-              <button type="button" onClick={() => setAmount((a) => a + 10)}>+10</button>
-            </div>
-            <div className="sheet-actions">
-              <button type="button" className="secondary" onClick={() => setStep(2)}>上一步</button>
-              <button type="button" onClick={handleSubmit} disabled={amount <= 0 || submitting}>
-                {submitting ? '提交中…' : '完成'}
-              </button>
-            </div>
+
+          {behavior && (
+            <>
+              <p>{behavior.name} · 单位：{behavior.unit}</p>
+              <div className="amount-row">
+                <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 10))}>-10</button>
+                <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 1))}>-1</button>
+                <input type="number" min={0} value={amount || ''} onChange={(e) => setAmount(Number(e.target.value) || 0)} />
+                <button type="button" onClick={() => setAmount((a) => a + 1)}>+1</button>
+                <button type="button" onClick={() => setAmount((a) => a + 10)}>+10</button>
+              </div>
+            </>
+          )}
+
+          <div className="sheet-actions">
+            <button type="button" className="secondary" onClick={onClose}>
+              取消
+            </button>
+            <button type="button" onClick={handleSubmit} disabled={!behavior || amount <= 0 || submitting}>
+              {submitting ? '提交中…' : '完成'}
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
@@ -1568,8 +1595,7 @@ interface RecordWellnessSheetProps {
 }
 
 function RecordWellnessSheet({ wellnessBehaviors, onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordWellnessSheetProps) {
-  const [step, setStep] = useState(1)
-  const [category, setCategory] = useState<WellnessCategory | null>(null)
+  const [category, setCategory] = useState<WellnessCategory | null>('补剂')
   const [behavior, setBehavior] = useState<WellnessBehavior | null>(null)
   const [amount, setAmount] = useState(0)
   const [submitting, setSubmitting] = useState(false)
@@ -1630,66 +1656,84 @@ function RecordWellnessSheet({ wellnessBehaviors, onClose, onSubmit, mode = 'tod
             <span className="sheet-backfill-hint">仅可补最近 7 天，且不能选择今天。</span>
           </div>
         )}
-        {step === 1 && (
-          <div className="sheet-step">
-            <p>选择类型</p>
-            <div className="sheet-buttons">
-              <button
-                type="button"
-                className={category === '补剂' ? 'active' : ''}
-                onClick={() => { setCategory('补剂'); setStep(2); setBehavior(null); setAmount(0); }}
-              >
-                补剂
-              </button>
-              <button
-                type="button"
-                className={category === '身体放松' ? 'active' : ''}
-                onClick={() => { setCategory('身体放松'); setStep(2); setBehavior(null); setAmount(0); }}
-              >
-                身体放松
-              </button>
-              <button
-                type="button"
-                className={category === '精神放松' ? 'active' : ''}
-                onClick={() => { setCategory('精神放松'); setStep(2); setBehavior(null); setAmount(0); }}
-              >
-                精神放松
-              </button>
-            </div>
+        <div className="sheet-step">
+          <p>选择类型</p>
+          <div className="sheet-buttons">
+            <button
+              type="button"
+              className={category === '补剂' ? 'active' : ''}
+              onClick={() => {
+                setCategory('补剂')
+                setBehavior(null)
+                setAmount(0)
+              }}
+            >
+              补剂
+            </button>
+            <button
+              type="button"
+              className={category === '身体放松' ? 'active' : ''}
+              onClick={() => {
+                setCategory('身体放松')
+                setBehavior(null)
+                setAmount(0)
+              }}
+            >
+              身体放松
+            </button>
+            <button
+              type="button"
+              className={category === '精神放松' ? 'active' : ''}
+              onClick={() => {
+                setCategory('精神放松')
+                setBehavior(null)
+                setAmount(0)
+              }}
+            >
+              精神放松
+            </button>
           </div>
-        )}
-        {step === 2 && (
-          <div className="sheet-step">
-            <p>选择行为</p>
-            <div className="sheet-list">
-              {filtered.map((b) => (
-                <button key={b.id} type="button" onClick={() => { setBehavior(b); setStep(3); setAmount(0); }}>
-                  {b.name}（{b.unit}）
-                </button>
-              ))}
-            </div>
+
+          <p>选择行为</p>
+          <div className="sheet-list">
+            {filtered.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                className={behavior && behavior.id === b.id ? 'active' : ''}
+                onClick={() => {
+                  setBehavior(b)
+                  setAmount(0)
+                }}
+              >
+                {b.name}（{b.unit}）
+              </button>
+            ))}
             {filtered.length === 0 && <p className="settings-hint">该类型下暂无行为，请先在设置里添加。</p>}
-            <button type="button" className="secondary" onClick={() => setStep(1)}>上一步</button>
           </div>
-        )}
-        {step === 3 && behavior && (
-          <div className="sheet-step">
-            <p>{behavior.name} · 单位：{behavior.unit}</p>
-            <div className="amount-row">
-              <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 10))}>-10</button>
-              <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 1))}>-1</button>
-              <input type="number" min={0} value={amount || ''} onChange={(e) => setAmount(Number(e.target.value) || 0)} />
-              <button type="button" onClick={() => setAmount((a) => a + 1)}>+1</button>
-              <button type="button" onClick={() => setAmount((a) => a + 10)}>+10</button>
-            </div>
-            <div className="sheet-actions">
-              <button type="button" className="secondary" onClick={() => setStep(2)}>上一步</button>
-              <button type="button" onClick={handleSubmit} disabled={amount <= 0 || submitting}>
-                {submitting ? '提交中…' : '完成'}
-              </button>
-            </div>
+
+          {behavior && (
+            <>
+              <p>{behavior.name} · 单位：{behavior.unit}</p>
+              <div className="amount-row">
+                <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 10))}>-10</button>
+                <button type="button" onClick={() => setAmount((a) => Math.max(0, a - 1))}>-1</button>
+                <input type="number" min={0} value={amount || ''} onChange={(e) => setAmount(Number(e.target.value) || 0)} />
+                <button type="button" onClick={() => setAmount((a) => a + 1)}>+1</button>
+                <button type="button" onClick={() => setAmount((a) => a + 10)}>+10</button>
+              </div>
+            </>
+          )}
+
+          <div className="sheet-actions">
+            <button type="button" className="secondary" onClick={onClose}>
+              取消
+            </button>
+            <button type="button" onClick={handleSubmit} disabled={!behavior || amount <= 0 || submitting}>
+              {submitting ? '提交中…' : '完成'}
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

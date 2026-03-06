@@ -68,8 +68,8 @@
 }
 
 .tab.active {
-  background: linear-gradient(135deg, #f97316, #ec4899);
-  color: white;
+  background: linear-gradient(135deg, #3b82f6, #22c1c3);
+  color: #f9fafb;
   font-weight: 600;
 }
 
@@ -227,7 +227,7 @@ select {
 
 input:focus,
 select:focus {
-  outline: 2px solid #f97316;
+  outline: 2px solid #3b82f6;
   outline-offset: 1px;
   border-color: transparent;
 }
@@ -287,8 +287,8 @@ button {
   padding: 0.4rem 0.9rem;
   font-size: 0.85rem;
   cursor: pointer;
-  background: linear-gradient(135deg, #f97316, #ec4899);
-  color: white;
+  background: #e5e7eb;
+  color: #111827;
 }
 
 button.secondary {
@@ -345,10 +345,10 @@ button:disabled {
 }
 
 .summary-card {
-  background: linear-gradient(135deg, #fff5f5, #fff9f5);
+  background: linear-gradient(135deg, #eff6ff, #e0f2fe);
   border-radius: 1rem;
   padding: 0.9rem 1rem;
-  border: 1px solid rgba(249, 115, 22, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.18);
 }
 
 .summary-card-pleasure {
@@ -416,11 +416,11 @@ button:disabled {
 
 .summary-card-remaining {
   font-size: 0.8rem;
-  color: #dc2626;
+  color: #b91c1c;
 }
 
 .summary-card-status-over {
-  color: #dc2626;
+  color: #b91c1c;
   font-weight: 600;
 }
 
@@ -452,8 +452,8 @@ button:disabled {
   font-weight: 600;
   border-radius: 1.25rem;
   border: none;
-  background: linear-gradient(135deg, #f97316, #ec4899);
-  color: white;
+  background: linear-gradient(135deg, #3b82f6, #22c1c3);
+  color: #f9fafb;
   cursor: pointer;
   margin-top: 0.5rem;
 }
@@ -491,11 +491,6 @@ button:disabled {
 
 .sheet-ugly .sheet-header {
   color: #3d4f41;
-}
-
-.sheet-ugly button:not(.secondary) {
-  background: linear-gradient(135deg, #5a6c5d, #3d4f41);
-  color: white;
 }
 
 .modal-ugly button {
@@ -567,11 +562,6 @@ button:disabled {
   color: #166534;
 }
 
-.sheet-wellness button:not(.secondary) {
-  background: linear-gradient(135deg, #86efac, #4ade80);
-  color: #14532d;
-}
-
 .modal-wellness button {
   background: linear-gradient(135deg, #86efac, #4ade80);
   color: #14532d;
@@ -601,6 +591,7 @@ button:disabled {
 
 .sheet-pleasure .input-note {
   width: 100%;
+  box-sizing: border-box;
   resize: none;
   padding: 0.5rem 0.75rem;
   border-radius: 0.75rem;
@@ -1162,6 +1153,19 @@ button:disabled {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
+@media (max-width: 480px) {
+  .sheet-overlay {
+    align-items: flex-end;
+    padding: 0.5rem;
+  }
+
+  .sheet {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
 .sheet-header {
   display: flex;
   justify-content: space-between;
@@ -1223,16 +1227,42 @@ button:disabled {
 
 .sheet-buttons button,
 .sheet-list button {
-  flex: 1;
-  min-width: 100px;
+  flex: 1 1 calc(50% - 0.5rem);
+  min-width: 0;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
 }
 
 .sheet-buttons button.active,
 .sheet-buttons-wrap button.active,
 .sheet-list button.active {
-  background: #0f172a;
+  background: linear-gradient(135deg, #bfdbfe, #a5b4fc);
+  color: #111827;
+  box-shadow: 0 6px 14px rgba(129, 140, 248, 0.32);
+}
+
+/* 分模块高亮色：运动（默认 sheet）用蓝紫，其它模块自带主题色 */
+
+.sheet-ugly .sheet-buttons button.active,
+.sheet-ugly .sheet-list button.active {
+  background: linear-gradient(135deg, #5a6c5d, #3d4f41);
   color: #f9fafb;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.32);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+.sheet-wellness .sheet-buttons button.active,
+.sheet-wellness .sheet-list button.active {
+  background: linear-gradient(135deg, #86efac, #4ade80);
+  color: #14532d;
+  box-shadow: 0 6px 14px rgba(52, 211, 153, 0.35);
+}
+
+.sheet-pleasure .sheet-buttons button.active,
+.sheet-pleasure .sheet-list button.active,
+.sheet-pleasure .sheet-buttons-wrap button.active {
+  background: linear-gradient(135deg, #bfdbfe, #a5b4fc);
+  color: #111827;
+  box-shadow: 0 6px 14px rgba(129, 140, 248, 0.45);
 }
 
 .amount-row {
