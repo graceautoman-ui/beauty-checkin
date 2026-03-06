@@ -608,6 +608,33 @@ button:disabled {
   margin-top: 0.5rem;
 }
 
+.sheet-step-pleasure-free p {
+  margin: 0.5rem 0 0.35rem;
+  font-size: 0.85rem;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.input-pleasure-event {
+  margin-top: 0;
+}
+
+.pleasure-score-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-pleasure-score {
+  width: 4.5rem;
+  text-align: center;
+}
+
+.pleasure-score-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
 /* ---------- 看板 Overview ---------- */
 .overview-dashboard {
   display: flex;

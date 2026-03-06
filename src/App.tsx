@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
-import type { Entry, Exercise, Settings, UglyBehavior, UglyCategory, UglyEntry, WellnessBehavior, WellnessCategory, WellnessEntry, PleasureEntry, PleasureCategory, PleasureCategoryConfig } from './domain/types'
+import type { Entry, Exercise, Settings, UglyBehavior, UglyCategory, UglyEntry, WellnessBehavior, WellnessCategory, WellnessEntry, PleasureEntry, PleasureCategoryConfig } from './domain/types'
 import { DEFAULT_EXERCISES } from './domain/exercises'
 import { DEFAULT_UGLY_BEHAVIORS } from './domain/uglyBehaviors'
 import { addWellnessEntry, getAllEntries, getAllUglyEntries, getAllWellnessEntries, getAllPleasureEntries, loadExercises, loadSettings, loadUglyBehaviors, loadWellnessBehaviors, loadPleasureCategories, saveExercises, saveSettings, saveUglyBehaviors, saveWellnessBehaviors, savePleasureEntries, savePleasureCategories, saveUglyEntries, saveWellnessEntries, deleteEntryById, DEFAULT_PLEASURE_CATEGORIES } from './lib/db'
@@ -354,8 +354,6 @@ function App() {
             onChangeUglyBehaviors={setUglyBehaviors}
             wellnessBehaviors={wellnessBehaviors}
             onChangeWellnessBehaviors={setWellnessBehaviors}
-            pleasureCategories={pleasureCategories}
-            onChangePleasureCategories={setPleasureCategories}
             settings={settings}
             onChangeSettings={setSettingsState}
             onSaveAll={handleSaveAll}
@@ -1741,7 +1739,12 @@ function PleasureDashboard({ pleasureEntries, setPleasureEntries, pleasureCatego
     const pool = candidates.length > 0 ? candidates : pleasureEntries
     const random = pool[Math.floor(Math.random() * pool.length)]
     const name = (random.activity && random.activity.trim()) || random.category
-    setDrawText(`去【${name}】吧`)
+    const feeling = (random.note && random.note.trim()) || ''
+    if (feeling) {
+      setDrawText(`去【${name}】吧，你会得到【${feeling}】`)
+    } else {
+      setDrawText(`去【${name}】吧`)
+    }
   }
 
   return (
@@ -1823,61 +1826,51 @@ interface RecordPleasureSheetProps {
   maxDateKey?: string
 }
 
-function RecordPleasureSheet({ pleasureCategories, onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordPleasureSheetProps) {
-  const [step, setStep] = useState(1)
-  const [category, setCategory] = useState<PleasureCategory | null>(null)
-  const [activityKey, setActivityKey] = useState<string>('')
-  const [customActivity, setCustomActivity] = useState('')
-  const [intensity, setIntensity] = useState<3 | 6 | 10 | null>(null)
-  const [note, setNote] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+function RecordPleasureSheet({ pleasureCategories: _pleasureCategories, onClose, onSubmit, mode = 'today', minDateKey, maxDateKey }: RecordPleasureSheetProps) {
   const todayKey = toDateKey(new Date())
-  const [dateKey, setDateKey] = useState(() => (mode === 'backfill' && maxDateKey ? maxDateKey : todayKey))
   const isBackfill = mode === 'backfill'
+  const [dateKey, setDateKey] = useState(() => (isBackfill && maxDateKey ? maxDateKey : todayKey))
 
-  const activityOptions = useMemo(() => {
-    if (!category) return []
-    const cfg = pleasureCategories.find((c) => c.name === category)
-    const base: string[] =
-      category === '身体放松'
-        ? ['性爱', '泡澡', '拉伸', '晒太阳']
-        : category === '感官享受'
-          ? ['美景', '音乐', '电影', '茶', '咖啡']
-          : category === '心智触动'
-            ? ['阅读触动', '写想法']
-            : category === '创造表达'
-              ? ['写作', '画画', '输出']
-              : category === '纯发呆'
-                ? ['纯发呆']
-                : cfg && cfg.examples
-                  ? cfg.examples.split('/').map((s) => s.trim()).filter(Boolean)
-                  : []
-    return [...base, '其他']
-  }, [category])
+  const [eventText, setEventText] = useState('')
+  const [scoreInput, setScoreInput] = useState('')
+  const [feeling, setFeeling] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const effectiveActivity = activityKey === '其他' ? customActivity.trim() : activityKey
+  const trimmedEvent = eventText.trim()
+  const numericScore = Number(scoreInput)
+  const validScore = Number.isFinite(numericScore) && numericScore > 0
 
   function handleSubmit() {
-    if (!category || intensity == null || !effectiveActivity) return
+    if (!trimmedEvent || !validScore) return
     if (isBackfill && (!dateKey || (maxDateKey && dateKey > maxDateKey) || (minDateKey && dateKey < minDateKey))) {
       return
     }
+
     setSubmitting(true)
     const now = new Date()
     const entryDateKey = isBackfill ? dateKey : toDateKey(now)
     const entryTimestamp = isBackfill
       ? new Date(`${entryDateKey}T${now.toTimeString().slice(0, 8)}`).toISOString()
       : now.toISOString()
+
+    // 将 1–10 分的愉悦值映射回 3/6/10 强度档位，兼容旧数据结构
+    const raw = Math.round(numericScore)
+    const clamped = Math.max(1, Math.min(10, raw))
+    let intensity: 3 | 6 | 10 = 3
+    if (clamped >= 8) intensity = 10
+    else if (clamped >= 5) intensity = 6
+
     const entry: PleasureEntry = {
       id: crypto.randomUUID(),
       timestamp: entryTimestamp,
       dateKey: entryDateKey,
-      category,
-      activity: effectiveActivity,
+      category: '其他',
+      activity: trimmedEvent,
       intensity,
-      score: intensity,
-      note: note.trim(),
+      score: clamped,
+      note: feeling.trim(),
     }
+
     void onSubmit(entry).finally(() => setSubmitting(false))
   }
 
@@ -1903,165 +1896,50 @@ function RecordPleasureSheet({ pleasureCategories, onClose, onSubmit, mode = 'to
             <span className="sheet-backfill-hint">仅可补最近 7 天，且不能选择今天。</span>
           </div>
         )}
-        {step === 1 && (
-          <div className="sheet-step">
-            <p>选择类型（主观体验）</p>
-            <div className="sheet-buttons sheet-buttons-wrap">
-              <button
-                type="button"
-                className={category === '身体放松' ? 'active' : ''}
-                onClick={() => {
-                  setCategory('身体放松')
-                  setActivityKey('')
-                  setCustomActivity('')
-                  setStep(2)
-                }}
-              >
-                身体放松
-              </button>
-              <button
-                type="button"
-                className={category === '感官享受' ? 'active' : ''}
-                onClick={() => {
-                  setCategory('感官享受')
-                  setActivityKey('')
-                  setCustomActivity('')
-                  setStep(2)
-                }}
-              >
-                感官享受
-              </button>
-              <button
-                type="button"
-                className={category === '心智触动' ? 'active' : ''}
-                onClick={() => {
-                  setCategory('心智触动')
-                  setActivityKey('')
-                  setCustomActivity('')
-                  setStep(2)
-                }}
-              >
-                心智触动
-              </button>
-              <button
-                type="button"
-                className={category === '创造表达' ? 'active' : ''}
-                onClick={() => {
-                  setCategory('创造表达')
-                  setActivityKey('')
-                  setCustomActivity('')
-                  setStep(2)
-                }}
-              >
-                创造表达
-              </button>
-              <button
-                type="button"
-                className={category === '纯发呆' ? 'active' : ''}
-                onClick={() => {
-                  setCategory('纯发呆')
-                  setActivityKey('')
-                  setCustomActivity('')
-                  setStep(2)
-                }}
-              >
-                纯发呆
-              </button>
-              <button
-                type="button"
-                className={category === '其他' ? 'active' : ''}
-                onClick={() => {
-                  setCategory('其他')
-                  setActivityKey('')
-                  setCustomActivity('')
-                  setStep(2)
-                }}
-              >
-                其他
-              </button>
-            </div>
-          </div>
-        )}
-        {step === 2 && category && (
-          <div className="sheet-step">
-            <p>具体做了什么？</p>
-            <div className="sheet-buttons sheet-buttons-wrap">
-              {activityOptions.map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  className={activityKey === opt ? 'active' : ''}
-                  onClick={() => {
-                    setActivityKey(opt)
-                    if (opt !== '其他') setCustomActivity('')
-                  }}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-            {activityKey === '其他' && (
-              <input
-                type="text"
-                className="input-note"
-                placeholder="请输入具体的愉悦活动，如：散步、发呆看天花板…"
-                maxLength={20}
-                value={customActivity}
-                onChange={(e) => setCustomActivity(e.target.value)}
-              />
-            )}
-            <p>本次愉悦的强度</p>
-            <div className="sheet-buttons sheet-buttons-wrap">
-              <button
-                type="button"
-                className={intensity === 3 ? 'active' : ''}
-                onClick={() => setIntensity(3)}
-              >
-                轻度 · 3
-              </button>
-              <button
-                type="button"
-                className={intensity === 6 ? 'active' : ''}
-                onClick={() => setIntensity(6)}
-              >
-                中度 · 6
-              </button>
-              <button
-                type="button"
-                className={intensity === 10 ? 'active' : ''}
-                onClick={() => setIntensity(10)}
-              >
-                高度 · 10
-              </button>
-            </div>
-            <p>想简单写几句当时发生了什么、有什么感觉（可选）</p>
-            <textarea
-              className="input-note"
-              rows={3}
-              maxLength={60}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="例如：晒太阳时突然觉得很放松，或者听到一首很戳心的歌…"
+        <div className="sheet-step sheet-step-pleasure-free">
+          <p>事件</p>
+          <input
+            type="text"
+            className="input-note input-pleasure-event"
+            placeholder="例如：下班路上听到一首很喜欢的歌、躺在阳光下发呆…"
+            maxLength={40}
+            value={eventText}
+            onChange={(e) => setEventText(e.target.value)}
+          />
+
+          <p>愉悦值</p>
+          <div className="pleasure-score-row">
+            <input
+              type="number"
+              min={1}
+              max={10}
+              className="input-pleasure-score"
+              value={scoreInput}
+              onChange={(e) => setScoreInput(e.target.value)}
+              placeholder="1 - 10"
             />
-            <div className="sheet-actions">
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => {
-                  setStep(1)
-                  setActivityKey('')
-                  setCustomActivity('')
-                  setIntensity(null)
-                }}
-              >
-                上一步
-              </button>
-              <button type="button" onClick={handleSubmit} disabled={intensity == null || submitting || !effectiveActivity}>
-                {submitting ? '提交中…' : '完成'}
-              </button>
-            </div>
+            <span className="pleasure-score-hint">按直觉打分：3≈轻度，6≈中度，10≈高度。</span>
           </div>
-        )}
+
+          <p>感受（可选）</p>
+          <textarea
+            className="input-note"
+            rows={3}
+            maxLength={80}
+            value={feeling}
+            onChange={(e) => setFeeling(e.target.value)}
+            placeholder="想简单写几句当时的心情、身体感觉、脑海里的念头…"
+          />
+
+          <div className="sheet-actions">
+            <button type="button" className="secondary" onClick={onClose}>
+              取消
+            </button>
+            <button type="button" onClick={handleSubmit} disabled={submitting || !trimmedEvent || !validScore}>
+              {submitting ? '提交中…' : '完成'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -2359,10 +2237,9 @@ function History({
                 <thead>
                   <tr>
                     <th>日期</th>
-                    <th>类别</th>
-                    <th>活动</th>
-                    <th>强度(P)</th>
-                    <th>备注</th>
+                    <th>事件</th>
+                    <th>愉悦值(P)</th>
+                    <th>感受</th>
                     <th>操作</th>
                   </tr>
                 </thead>
@@ -2370,7 +2247,6 @@ function History({
                   {pleasureList.map((p) => (
                     <tr key={p.id}>
                       <td>{p.dateKey.slice(5).replace('-', '/')}</td>
-                      <td>{p.category}</td>
                       <td>{p.activity}</td>
                       <td>{p.score}</td>
                       <td>{p.note || '—'}</td>
@@ -2406,8 +2282,6 @@ interface SettingsPanelProps {
   onChangeUglyBehaviors: (value: UglyBehavior[]) => void
   wellnessBehaviors: WellnessBehavior[]
   onChangeWellnessBehaviors: (value: WellnessBehavior[]) => void
-  pleasureCategories: PleasureCategoryConfig[]
-  onChangePleasureCategories: (value: PleasureCategoryConfig[]) => void
   settings: Settings
   onChangeSettings: (value: Settings) => void
   onSaveAll: () => void
@@ -2421,8 +2295,6 @@ function SettingsPanel({
   onChangeUglyBehaviors,
   wellnessBehaviors,
   onChangeWellnessBehaviors,
-  pleasureCategories,
-  onChangePleasureCategories,
   settings,
   onChangeSettings,
   onSaveAll,
@@ -2436,7 +2308,6 @@ function SettingsPanel({
   const [exerciseNumDisplay, setExerciseNumDisplay] = useState<Record<number, string>>({})
   const [uglyNumDisplay, setUglyNumDisplay] = useState<Record<number, string>>({})
   const [wellnessNumDisplay, setWellnessNumDisplay] = useState<Record<number, string>>({})
-  const [pleasureCategoryExamples, setPleasureCategoryExamples] = useState<Record<number, string>>({})
 
   useEffect(() => {
     if (settings.dailyBeautyGoal !== undefined) setGoalDisplay((prev) => ({ ...prev, dailyBeautyGoal: String(settings.dailyBeautyGoal) }))
@@ -2565,31 +2436,7 @@ function SettingsPanel({
     onChangeWellnessBehaviors(wellnessBehaviors.filter((b) => b.id !== id))
   }
 
-  function handlePleasureCategoryChange(id: number, field: keyof PleasureCategoryConfig, value: string) {
-    onChangePleasureCategories(
-      pleasureCategories.map((c) => {
-        if (c.id !== id) return c
-        if (field === 'examples') {
-          setPleasureCategoryExamples((prev) => ({ ...prev, [id]: value }))
-        }
-        return { ...c, [field]: value }
-      }),
-    )
-  }
-
-  function handleAddPleasureCategory() {
-    const maxId = pleasureCategories.reduce((max, c) => Math.max(max, c.id), 0)
-    onChangePleasureCategories([
-      ...pleasureCategories,
-      { id: maxId + 1, name: '', examples: '' },
-    ])
-  }
-
-  function handleRemovePleasureCategory(id: number) {
-    onChangePleasureCategories(pleasureCategories.filter((c) => c.id !== id))
-  }
-
-  type SettingsTab = 'goal' | 'beauty' | 'ugly' | 'wellness' | 'pleasure'
+  type SettingsTab = 'goal' | 'beauty' | 'ugly' | 'wellness'
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('goal')
 
   return (
@@ -2622,13 +2469,6 @@ function SettingsPanel({
           onClick={() => setSettingsTab('wellness')}
         >
           养生
-        </button>
-        <button
-          type="button"
-          className={settingsTab === 'pleasure' ? 'tab active' : 'tab'}
-          onClick={() => setSettingsTab('pleasure')}
-        >
-          愉悦
         </button>
       </nav>
 
@@ -2879,46 +2719,6 @@ function SettingsPanel({
         </div>
         <button type="button" onClick={handleAddWellness} className="secondary">
           新增行为
-        </button>
-      </section>
-      )}
-
-      {settingsTab === 'pleasure' && (
-      <section className="settings-section">
-        <h2>愉悦配置（类别 / 例子说明）</h2>
-        <p className="settings-hint">这里可以增删改愉悦类别，比如身体放松 / 感官享受等，用于愉悦打卡的第一层大类。</p>
-        <div className="exercise-table">
-          <div className="exercise-row exercise-row--header">
-            <span>类别名称</span>
-            <span>例子说明</span>
-            <span />
-          </div>
-          {pleasureCategories.map((c) => (
-            <div key={c.id} className="exercise-row">
-              <input
-                type="text"
-                className="input-name"
-                value={c.name}
-                placeholder="如：身体放松"
-                maxLength={6}
-                onChange={(e) => handlePleasureCategoryChange(c.id, 'name', e.target.value)}
-              />
-              <input
-                type="text"
-                className="input-unit"
-                value={pleasureCategoryExamples[c.id] ?? c.examples}
-                placeholder="如：泡澡 / 拉伸 / 晒太阳"
-                maxLength={30}
-                onChange={(e) => handlePleasureCategoryChange(c.id, 'examples', e.target.value)}
-              />
-              <button type="button" className="danger" onClick={() => handleRemovePleasureCategory(c.id)}>
-                删除
-              </button>
-            </div>
-          ))}
-        </div>
-        <button type="button" onClick={handleAddPleasureCategory} className="secondary">
-          新增愉悦类别
         </button>
       </section>
       )}
