@@ -243,13 +243,13 @@ select:focus {
 
 .exercise-row {
   display: grid;
-  /* 类型(2 字) | 名称(<=7 字) | 单位(2 字) | 每单位美丽值(<=4 字符) | 操作按钮 */
+  /* 类型(2 字) | 名称(<=7 字) | 单位(2 字) | 每单位运动值(<=4 字符) | 操作按钮 */
   /* 使用 minmax 保证最小宽度的同时，让 5 列在整行中均匀分布 */
   grid-template-columns:
     minmax(4em, 1fr)   /* 类型 */
     minmax(5em, 2fr)   /* 名称 */
     minmax(3em, 1fr)   /* 单位 */
-    minmax(6ch, 1.2fr) /* 每单位美丽值（在原 4.5ch 基础上放大约 30%） */
+    minmax(6ch, 1.2fr) /* 每单位运动值（在原 4.5ch 基础上放大约 30%） */
     minmax(4em, 1fr);  /* 删除 */
   gap: 0.35rem;
   align-items: center;
@@ -330,6 +330,181 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.beauty-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.beauty-switch {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.beauty-pill {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.beauty-pill-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.beauty-pill-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.beauty-pill.active .beauty-pill-circle--exercise {
+  background: linear-gradient(135deg, #3b82f6, #22c1c3);
+  color: #f9fafb;
+}
+
+.beauty-pill.active .beauty-pill-circle--wellness {
+  background: linear-gradient(135deg, #86efac, #4ade80);
+  color: #14532d;
+}
+
+.beauty-pill.active .beauty-pill-circle--ugly {
+  background: linear-gradient(135deg, #5a6c5d, #3d4f41);
+  color: #f9fafb;
+}
+
+.growth-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.growth-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.growth-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.growth-item {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.9rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: default;
+}
+
+.growth-item-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  flex-shrink: 0;
+}
+
+.growth-item-sub {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  text-align: right;
+  margin-left: auto;
+  max-width: 65%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 今日阅读：右侧书名与时长醒目展示 */
+.growth-item-sub--highlight {
+  font-size: 0.78rem;
+  color: #0c4a6e;
+}
+
+.growth-item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  margin-left: auto;
+  max-width: 65%;
+  text-align: right;
+}
+
+.growth-item-right .growth-item-sub,
+.growth-item-right .growth-item-sub--highlight {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.growth-item-right--twoline {
+  gap: 0.15rem;
+}
+
+.growth-item-sub--preview {
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* 成长页马卡龙色卡片（避免高饱和） */
+.growth-item:nth-child(1) {
+  background: linear-gradient(135deg, #fef3c7, #e0f2fe);
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+.growth-item:nth-child(2) {
+  background: linear-gradient(135deg, #ecfeff, #ddd6fe);
+  border-color: rgba(129, 140, 248, 0.3);
+}
+
+.growth-item:nth-child(3) {
+  background: linear-gradient(135deg, #dcfce7, #e0f2fe);
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.growth-item:nth-child(4) {
+  background: linear-gradient(135deg, #fee2e2, #fef3c7);
+  border-color: rgba(248, 113, 113, 0.22);
+}
+
+.growth-item:nth-child(5) {
+  background: linear-gradient(135deg, #e0f2fe, #f5f3ff);
+  border-color: rgba(56, 189, 248, 0.26);
+}
+
+.growth-item:nth-child(6) {
+  background: linear-gradient(135deg, #fdf2f8, #e0e7ff);
+  border-color: rgba(236, 72, 153, 0.22);
 }
 
 .summary-cards {
@@ -608,6 +783,234 @@ button:disabled {
 
 .input-pleasure-event {
   margin-top: 0;
+}
+
+/* 成长 · 阅读打卡 */
+.sheet-reading .pleasure-field-body input {
+  margin-top: 0;
+}
+
+.sheet-reading-recorded {
+  margin-bottom: 0.75rem;
+}
+
+.sheet-reading-recorded .pleasure-field-label {
+  margin-bottom: 0.35rem;
+}
+
+.sheet-reading-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.sheet-reading-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+  color: #374151;
+  text-align: left;
+}
+
+.sheet-reading-list-item > span:not(.sheet-recorded-num) {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.sheet-recorded-num {
+  flex-shrink: 0;
+  min-width: 1.25em;
+  opacity: 0.85;
+}
+
+/* 各栏目已记录列表主题色（与成长页卡片对应） */
+.sheet-reading .sheet-reading-list-item {
+  background: rgba(254, 243, 199, 0.85);
+  border-left: 3px solid rgba(245, 158, 11, 0.6);
+}
+
+.sheet-english .sheet-reading-list-item {
+  background: rgba(207, 250, 254, 0.9);
+  border-left: 3px solid rgba(129, 140, 248, 0.5);
+}
+
+.sheet-skill .sheet-reading-list-item {
+  background: rgba(220, 252, 231, 0.9);
+  border-left: 3px solid rgba(34, 197, 94, 0.5);
+}
+
+.sheet-gratitude .sheet-reading-list-item {
+  background: rgba(254, 226, 226, 0.9);
+  border-left: 3px solid rgba(248, 113, 113, 0.5);
+}
+
+.sheet-discovery .sheet-reading-list-item {
+  background: rgba(224, 242, 254, 0.9);
+  border-left: 3px solid rgba(56, 189, 248, 0.5);
+}
+
+.sheet-sentence .sheet-reading-list-item {
+  background: rgba(253, 242, 248, 0.9);
+  border-left: 3px solid rgba(236, 72, 153, 0.5);
+}
+
+.sheet-reading-delete {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sheet-reading-delete:hover:not(:disabled) {
+  background: #fecaca;
+  color: #b91c1c;
+}
+
+.sheet-reading-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 今日学英语 */
+.sheet-english .pleasure-field-body input {
+  margin-top: 0;
+}
+
+.sheet-english-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.sheet-english-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-english-btns {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.sheet-english-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-subtle);
+  background: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sheet-english-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.sheet-english-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sheet-english-btn-check {
+  color: #059669;
+  font-weight: 700;
+}
+
+.sheet-english-btn-plus {
+  color: #0369a1;
+  font-size: 1.25rem;
+}
+
+.sheet-reading-duration {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.sheet-duration-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: #fff;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #374151;
+}
+
+.sheet-duration-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.sheet-duration-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sheet-duration-value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  min-width: 3rem;
+  text-align: center;
+  color: #111827;
+}
+
+.sheet-reading .sheet-buttons button.active,
+.sheet-reading .sheet-list button.active {
+  background: linear-gradient(135deg, #a7f3d0, #6ee7b7);
+  color: #111827;
+  box-shadow: 0 6px 14px rgba(52, 211, 153, 0.4);
+}
+
+.pleasure-field {
+  background: #f9fafb;
+  border-radius: 0.85rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 0.7rem;
+}
+
+.pleasure-field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.35rem;
+}
+
+.pleasure-field-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pleasure-feeling-input {
+  min-height: 4.5rem;
 }
 
 .pleasure-score-row {
@@ -917,6 +1320,90 @@ button:disabled {
   background: #6366f1;
 }
 
+.legend-growth::before {
+  background: #10b981;
+}
+
+.legend-wellness::before {
+  background: #22c55e;
+}
+
+.legend-ugly::before {
+  background: #f43f5e;
+}
+
+.overview-trend-metric-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.overview-trend-metric-tabs .overview-pill-macaron,
+.overview-trend-beauty-sub-tabs .overview-pill-macaron {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.overview-trend-metric-tabs .overview-pill-beauty.overview-pill-macaron {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+}
+
+.overview-trend-metric-tabs .overview-pill-beauty.overview-pill-macaron.active {
+  background: linear-gradient(135deg, #fde68a, #fcd34d);
+  color: #78350f;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.35);
+}
+
+.overview-trend-metric-tabs .overview-pill-pleasure.overview-pill-macaron {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  color: #3730a3;
+}
+
+.overview-trend-metric-tabs .overview-pill-pleasure.overview-pill-macaron.active {
+  background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+  color: #312e81;
+  box-shadow: 0 2px 8px rgba(129, 140, 248, 0.35);
+}
+
+.overview-trend-metric-tabs .overview-pill-growth.overview-pill-macaron {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #065f46;
+}
+
+.overview-trend-metric-tabs .overview-pill-growth.overview-pill-macaron.active {
+  background: linear-gradient(135deg, #a7f3d0, #6ee7b7);
+  color: #064e3b;
+  box-shadow: 0 2px 8px rgba(52, 211, 153, 0.35);
+}
+
+.overview-trend-beauty-sub-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.overview-trend-beauty-sub-tabs .overview-pill {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+
+.overview-trend-beauty-sub-tabs .overview-pill-exercise.overview-pill-macaron,
+.overview-trend-beauty-sub-tabs .overview-pill-wellness.overview-pill-macaron,
+.overview-trend-beauty-sub-tabs .overview-pill-ugly.overview-pill-macaron {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+}
+
+.overview-trend-beauty-sub-tabs .overview-pill-exercise.overview-pill-macaron.active,
+.overview-trend-beauty-sub-tabs .overview-pill-wellness.overview-pill-macaron.active,
+.overview-trend-beauty-sub-tabs .overview-pill-ugly.overview-pill-macaron.active {
+  background: linear-gradient(135deg, #fde68a, #fcd34d);
+  color: #78350f;
+  box-shadow: 0 2px 6px rgba(251, 191, 36, 0.3);
+}
+
 .overview-trend-list {
   display: flex;
   flex-direction: column;
@@ -998,6 +1485,18 @@ button:disabled {
   fill: url(#trend-pleasure-gradient);
 }
 
+.overview-trend-area--growth {
+  fill: url(#trend-growth-gradient);
+}
+
+.overview-trend-area--wellness {
+  fill: url(#trend-wellness-gradient);
+}
+
+.overview-trend-area--ugly {
+  fill: url(#trend-ugly-gradient);
+}
+
 .overview-trend-line {
   stroke-width: 2.4;
   stroke-linecap: round;
@@ -1012,6 +1511,18 @@ button:disabled {
   stroke: #6366f1;
 }
 
+.overview-trend-line--growth {
+  stroke: #10b981;
+}
+
+.overview-trend-line--wellness {
+  stroke: #22c55e;
+}
+
+.overview-trend-line--ugly {
+  stroke: #f43f5e;
+}
+
 .overview-trend-dot {
   stroke: #ffffff;
   stroke-width: 1.2;
@@ -1023,6 +1534,18 @@ button:disabled {
 
 .overview-trend-dot--pleasure {
   fill: #6366f1;
+}
+
+.overview-trend-dot--growth {
+  fill: #10b981;
+}
+
+.overview-trend-dot--wellness {
+  fill: #22c55e;
+}
+
+.overview-trend-dot--ugly {
+  fill: #f43f5e;
 }
 
 .overview-metric--wellness {
@@ -1164,6 +1687,11 @@ button:disabled {
     max-height: 90vh;
     border-radius: 1rem 1rem 0 0;
   }
+
+  .sheet input,
+  .sheet textarea {
+    font-size: 16px;
+  }
 }
 
 .sheet-header {
@@ -1214,7 +1742,7 @@ button:disabled {
 
 .sheet-step p {
   margin: 0 0 0.75rem;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .sheet-buttons,
@@ -1229,8 +1757,19 @@ button:disabled {
 .sheet-list button {
   flex: 1 1 calc(50% - 0.5rem);
   min-width: 0;
-  padding: 0.45rem 0.75rem;
-  font-size: 0.85rem;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.95rem;
+}
+
+.pleasure-score-buttons {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+}
+
+.pleasure-score-buttons button {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding-inline: 0.9rem;
 }
 
 .sheet-buttons button.active,
@@ -1383,6 +1922,54 @@ button:disabled {
 
 .history-section {
   margin-top: 1.25rem;
+}
+
+.history-growth-section h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.history-growth-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.history-growth-block {
+  background: #f9fafb;
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.history-growth-block h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.history-growth-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.history-growth-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+  color: #4b5563;
+  text-align: left;
+}
+
+.history-growth-date {
+  flex-shrink: 0;
+  color: #6b7280;
+  font-size: 0.8rem;
 }
 
 .history-pleasure-section {

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
-import type { Entry, Exercise, Settings, UglyBehavior, UglyCategory, UglyEntry, WellnessBehavior, WellnessCategory, WellnessEntry, PleasureEntry, PleasureCategoryConfig } from './domain/types'
+import type { Entry, Exercise, Settings, UglyBehavior, UglyCategory, UglyEntry, WellnessBehavior, WellnessCategory, WellnessEntry, PleasureEntry, PleasureCategoryConfig, ReadingEntry, EnglishEntry, SkillEntry, GratitudeEntry, DiscoveryEntry, SentenceEntry } from './domain/types'
 import { DEFAULT_EXERCISES } from './domain/exercises'
 import { DEFAULT_UGLY_BEHAVIORS } from './domain/uglyBehaviors'
-import { addWellnessEntry, getAllEntries, getAllUglyEntries, getAllWellnessEntries, getAllPleasureEntries, loadExercises, loadSettings, loadUglyBehaviors, loadWellnessBehaviors, loadPleasureCategories, saveExercises, saveSettings, saveUglyBehaviors, saveWellnessBehaviors, savePleasureEntries, savePleasureCategories, saveUglyEntries, saveWellnessEntries, deleteEntryById, DEFAULT_PLEASURE_CATEGORIES } from './lib/db'
+import { addWellnessEntry, getAllEntries, getAllUglyEntries, getAllWellnessEntries, getAllPleasureEntries, getAllReadingEntries, getAllEnglishEntries, getAllSkillEntries, getAllGratitudeEntries, getAllDiscoveryEntries, getAllSentenceEntries, loadExercises, loadSettings, loadUglyBehaviors, loadWellnessBehaviors, loadPleasureCategories, saveExercises, saveSettings, saveUglyBehaviors, saveWellnessBehaviors, savePleasureEntries, savePleasureCategories, saveReadingEntries, saveEnglishEntries, saveSkillEntries, saveGratitudeEntries, saveDiscoveryEntries, saveSentenceEntries, saveUglyEntries, saveWellnessEntries, addReadingEntry, addEnglishEntry, addSkillEntry, addGratitudeEntry, addDiscoveryEntry, addSentenceEntry, deleteEntryById, DEFAULT_PLEASURE_CATEGORIES } from './lib/db'
 import { loadUserData, onAuthStateChange, saveUserData, supabase } from './lib/supabase'
 import {
   calcBeauty,
@@ -29,7 +29,7 @@ import {
   toDateKey,
 } from './lib/metrics'
 
-type Tab = 'overview' | 'dashboard' | 'ugly' | 'wellness' | 'pleasure' | 'history' | 'settings'
+type Tab = 'overview' | 'dashboard' | 'ugly' | 'wellness' | 'pleasure' | 'growth' | 'history' | 'settings'
 
 function App() {
   const [tab, setTab] = useState<Tab>('dashboard')
@@ -43,6 +43,12 @@ function App() {
   const [wellnessEntries, setWellnessEntries] = useState<WellnessEntry[]>([])
   const [pleasureEntries, setPleasureEntries] = useState<PleasureEntry[]>([])
   const [pleasureCategories, setPleasureCategories] = useState<PleasureCategoryConfig[]>([])
+  const [readingEntries, setReadingEntries] = useState<ReadingEntry[]>([])
+  const [englishEntries, setEnglishEntries] = useState<EnglishEntry[]>([])
+  const [skillEntries, setSkillEntries] = useState<SkillEntry[]>([])
+  const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeEntry[]>([])
+  const [discoveryEntries, setDiscoveryEntries] = useState<DiscoveryEntry[]>([])
+  const [sentenceEntries, setSentenceEntries] = useState<SentenceEntry[]>([])
   const [saving, setSaving] = useState(false)
   const [authUser, setAuthUser] = useState<{ email: string } | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -69,6 +75,13 @@ function App() {
                 ? data.pleasureCategories
                 : DEFAULT_PLEASURE_CATEGORIES,
             )
+            const [reading, english, skill, grat, disc, sent] = await Promise.all([getAllReadingEntries(), getAllEnglishEntries(), getAllSkillEntries(), getAllGratitudeEntries(), getAllDiscoveryEntries(), getAllSentenceEntries()])
+            setReadingEntries(reading)
+            setEnglishEntries(english)
+            setSkillEntries(skill)
+            setGratitudeEntries(grat)
+            setDiscoveryEntries(disc)
+            setSentenceEntries(sent)
             setAuthUser({ email: session.user.email ?? '' })
           } else {
             setExercises(DEFAULT_EXERCISES)
@@ -80,12 +93,19 @@ function App() {
             setWellnessEntries([])
             setPleasureEntries([])
             setPleasureCategories(DEFAULT_PLEASURE_CATEGORIES)
+            const [reading, english, skill, grat, disc, sent] = await Promise.all([getAllReadingEntries(), getAllEnglishEntries(), getAllSkillEntries(), getAllGratitudeEntries(), getAllDiscoveryEntries(), getAllSentenceEntries()])
+            setReadingEntries(reading)
+            setEnglishEntries(english)
+            setSkillEntries(skill)
+            setGratitudeEntries(grat)
+            setDiscoveryEntries(disc)
+            setSentenceEntries(sent)
             setAuthUser({ email: session.user.email ?? '' })
           }
         } else {
-          const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries, loadedPleasureEntries, loadedPleasureCategories] = await Promise.all([
+          const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries, loadedPleasureEntries, loadedPleasureCategories, loadedReadingEntries, loadedEnglishEntries, loadedSkillEntries, loadedGratitudeEntries, loadedDiscoveryEntries, loadedSentenceEntries] = await Promise.all([
             loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(),
-            getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(), loadPleasureCategories(),
+            getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(), loadPleasureCategories(), getAllReadingEntries(), getAllEnglishEntries(), getAllSkillEntries(), getAllGratitudeEntries(), getAllDiscoveryEntries(), getAllSentenceEntries(),
           ])
           setExercises(loadedExercises)
           setUglyBehaviors(loadedUgly)
@@ -96,12 +116,18 @@ function App() {
           setWellnessEntries(loadedWellnessEntries)
           setPleasureEntries(loadedPleasureEntries)
           setPleasureCategories(loadedPleasureCategories)
+          setReadingEntries(loadedReadingEntries)
+          setEnglishEntries(loadedEnglishEntries)
+          setSkillEntries(loadedSkillEntries)
+          setGratitudeEntries(loadedGratitudeEntries)
+          setDiscoveryEntries(loadedDiscoveryEntries)
+          setSentenceEntries(loadedSentenceEntries)
           setAuthUser(null)
         }
       } else {
-        const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries, loadedPleasureEntries, loadedPleasureCategories] = await Promise.all([
+        const [loadedExercises, loadedUgly, loadedWellness, loadedSettings, loadedEntries, loadedUglyEntries, loadedWellnessEntries, loadedPleasureEntries, loadedPleasureCategories, loadedReadingEntries, loadedEnglishEntries, loadedSkillEntries, loadedGratitudeEntries, loadedDiscoveryEntries, loadedSentenceEntries] = await Promise.all([
           loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(),
-          getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(), loadPleasureCategories(),
+          getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(), loadPleasureCategories(), getAllReadingEntries(), getAllEnglishEntries(), getAllSkillEntries(), getAllGratitudeEntries(), getAllDiscoveryEntries(), getAllSentenceEntries(),
         ])
         setExercises(loadedExercises)
         setUglyBehaviors(loadedUgly)
@@ -112,6 +138,12 @@ function App() {
         setWellnessEntries(loadedWellnessEntries)
         setPleasureEntries(loadedPleasureEntries)
         setPleasureCategories(loadedPleasureCategories)
+        setReadingEntries(loadedReadingEntries)
+        setEnglishEntries(loadedEnglishEntries)
+        setSkillEntries(loadedSkillEntries)
+        setGratitudeEntries(loadedGratitudeEntries)
+        setDiscoveryEntries(loadedDiscoveryEntries)
+        setSentenceEntries(loadedSentenceEntries)
         setAuthUser(null)
       }
       setLoading(false)
@@ -144,8 +176,8 @@ function App() {
         })
       } else if (event === 'SIGNED_OUT') {
         setAuthUser(null)
-        void Promise.all([loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(), getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(), loadPleasureCategories()]).then(
-          ([ex, ug, wel, set, ent, ue, we, pe, pc]) => {
+        void Promise.all([loadExercises(), loadUglyBehaviors(), loadWellnessBehaviors(), loadSettings(), getAllEntries(), getAllUglyEntries(), getAllWellnessEntries(), getAllPleasureEntries(), loadPleasureCategories(), getAllReadingEntries(), getAllEnglishEntries(), getAllSkillEntries(), getAllGratitudeEntries(), getAllDiscoveryEntries(), getAllSentenceEntries()]).then(
+          ([ex, ug, wel, set, ent, ue, we, pe, pc, re, eng, sk, grat, disc, sent]) => {
             setExercises(ex)
             setUglyBehaviors(ug)
             setWellnessBehaviors(wel)
@@ -155,6 +187,12 @@ function App() {
             setWellnessEntries(we)
             setPleasureEntries(pe)
             setPleasureCategories(pc)
+            setReadingEntries(re)
+            setEnglishEntries(eng)
+            setSkillEntries(sk)
+            setGratitudeEntries(grat)
+            setDiscoveryEntries(disc)
+            setSentenceEntries(sent)
           },
         )
       }
@@ -184,11 +222,17 @@ function App() {
           saveSettings(settings),
           savePleasureEntries(pleasureEntries),
           savePleasureCategories(pleasureCategories),
+          saveReadingEntries(readingEntries),
+          saveEnglishEntries(englishEntries),
+          saveSkillEntries(skillEntries),
+          saveGratitudeEntries(gratitudeEntries),
+          saveDiscoveryEntries(discoveryEntries),
+          saveSentenceEntries(sentenceEntries),
         ])
       }
     }, 600)
     return () => clearTimeout(t)
-  }, [authUser, exercises, settings, uglyBehaviors, wellnessBehaviors, entries, uglyEntries, wellnessEntries, pleasureEntries])
+  }, [authUser, exercises, settings, uglyBehaviors, wellnessBehaviors, entries, uglyEntries, wellnessEntries, pleasureEntries, readingEntries, englishEntries, skillEntries, gratitudeEntries, discoveryEntries, sentenceEntries])
 
   async function handleSaveAll() {
     if (!settings) return
@@ -214,6 +258,12 @@ function App() {
           saveSettings(settings),
           savePleasureEntries(pleasureEntries),
           savePleasureCategories(pleasureCategories),
+          saveReadingEntries(readingEntries),
+          saveEnglishEntries(englishEntries),
+          saveSkillEntries(skillEntries),
+          saveGratitudeEntries(gratitudeEntries),
+          saveDiscoveryEntries(discoveryEntries),
+          saveSentenceEntries(sentenceEntries),
         ])
       }
     } finally {
@@ -281,11 +331,9 @@ function App() {
       )}
 
       <nav className="app-tabs">
-        <button type="button" className={tab === 'dashboard' ? 'tab active' : 'tab'} onClick={() => setTab('dashboard')}>运动</button>
-        <button type="button" className={tab === 'wellness' ? 'tab active tab-wellness' : 'tab tab-wellness'} onClick={() => setTab('wellness')}>养生</button>
+        <button type="button" className={tab === 'dashboard' ? 'tab active' : 'tab'} onClick={() => setTab('dashboard')}>健康</button>
         <button type="button" className={tab === 'pleasure' ? 'tab active tab-pleasure' : 'tab tab-pleasure'} onClick={() => setTab('pleasure')}>愉悦</button>
-        <button type="button" className={tab === 'ugly' ? 'tab active tab-ugly' : 'tab tab-ugly'} onClick={() => setTab('ugly')}>变丑</button>
-        <button type="button" className={tab === 'overview' ? 'tab active tab-overview' : 'tab tab-overview'} onClick={() => setTab('overview')}>看板</button>
+        <button type="button" className={tab === 'growth' ? 'tab active' : 'tab'} onClick={() => setTab('growth')}>成长</button>
       </nav>
 
       <main className="app-main">
@@ -295,23 +343,26 @@ function App() {
             uglyEntries={uglyEntries}
             wellnessEntries={wellnessEntries}
             pleasureEntries={pleasureEntries}
+            readingEntries={readingEntries}
+            englishEntries={englishEntries}
+            skillEntries={skillEntries}
+            gratitudeEntries={gratitudeEntries}
+            discoveryEntries={discoveryEntries}
+            sentenceEntries={sentenceEntries}
             settings={settings}
           />
         )}
-        {tab === 'dashboard' && (
-          <Dashboard
+        {tab === 'dashboard' && settings && (
+          <BeautyHub
             entries={entries}
             setEntries={setEntries}
             exercises={exercises}
-            settings={settings}
-            syncMode={!!authUser}
-          />
-        )}
-        {tab === 'ugly' && settings && (
-          <UglyDashboard
             uglyEntries={uglyEntries}
             setUglyEntries={setUglyEntries}
             uglyBehaviors={uglyBehaviors}
+            wellnessEntries={wellnessEntries}
+            setWellnessEntries={setWellnessEntries}
+            wellnessBehaviors={wellnessBehaviors}
             settings={settings}
             syncMode={!!authUser}
           />
@@ -324,21 +375,73 @@ function App() {
             syncMode={!!authUser}
           />
         )}
-        {tab === 'wellness' && settings && (
-          <WellnessDashboard
-            wellnessEntries={wellnessEntries}
-            setWellnessEntries={setWellnessEntries}
-            wellnessBehaviors={wellnessBehaviors}
-            settings={settings}
-            syncMode={!!authUser}
+        {tab === 'growth' && (
+          <GrowthPage
+            readingEntries={readingEntries}
+            englishEntries={englishEntries}
+            skillEntries={skillEntries}
+            onAddReadingEntry={async (entry) => {
+              setReadingEntries((prev) => [...prev, entry])
+              await addReadingEntry(entry)
+            }}
+            onUpdateReadingEntry={async (updatedEntry) => {
+              const next = readingEntries.map((e) => (e.id === updatedEntry.id ? updatedEntry : e))
+              setReadingEntries(next)
+              await saveReadingEntries(next)
+            }}
+            onDeleteReadingEntry={async (id) => {
+              const next = readingEntries.filter((e) => e.id !== id)
+              setReadingEntries(next)
+              await saveReadingEntries(next)
+            }}
+            onAddEnglishEntry={async (entry) => {
+              setEnglishEntries((prev) => [...prev, entry])
+              await addEnglishEntry(entry)
+            }}
+            onAddSkillEntry={async (entry) => {
+              setSkillEntries((prev) => [...prev, entry])
+              await addSkillEntry(entry)
+            }}
+            onUpdateSkillEntry={async (updatedEntry) => {
+              const next = skillEntries.map((e) => (e.id === updatedEntry.id ? updatedEntry : e))
+              setSkillEntries(next)
+              await saveSkillEntries(next)
+            }}
+            onDeleteSkillEntry={async (id) => {
+              const next = skillEntries.filter((e) => e.id !== id)
+              setSkillEntries(next)
+              await saveSkillEntries(next)
+            }}
+            gratitudeEntries={gratitudeEntries}
+            discoveryEntries={discoveryEntries}
+            sentenceEntries={sentenceEntries}
+            onAddGratitudeEntry={async (entry) => {
+              setGratitudeEntries((prev) => [...prev, entry])
+              await addGratitudeEntry(entry)
+            }}
+            onAddDiscoveryEntry={async (entry) => {
+              setDiscoveryEntries((prev) => [...prev, entry])
+              await addDiscoveryEntry(entry)
+            }}
+            onAddSentenceEntry={async (entry) => {
+              setSentenceEntries((prev) => [...prev, entry])
+              await addSentenceEntry(entry)
+            }}
           />
         )}
+        {/* 养生 / 变丑 Dashboard 已合并到 BeautyHub 中 */}
         {tab === 'history' && settings && (
           <History
             entries={entries}
             uglyEntries={uglyEntries}
             wellnessEntries={wellnessEntries}
             pleasureEntries={pleasureEntries}
+            readingEntries={readingEntries}
+            englishEntries={englishEntries}
+            skillEntries={skillEntries}
+            gratitudeEntries={gratitudeEntries}
+            discoveryEntries={discoveryEntries}
+            sentenceEntries={sentenceEntries}
             settings={settings}
             onDeleteExercise={handleDeleteExerciseEntry}
             onDeleteUgly={handleDeleteUglyEntry}
@@ -363,6 +466,7 @@ function App() {
       </main>
 
       <nav className="app-tabs app-tabs-bottom">
+        <button type="button" className={tab === 'overview' ? 'tab active tab-overview' : 'tab tab-overview'} onClick={() => setTab('overview')}>看板</button>
         <button type="button" className={tab === 'history' ? 'tab active' : 'tab'} onClick={() => setTab('history')}>历史</button>
         <button type="button" className={tab === 'settings' ? 'tab active' : 'tab'} onClick={() => setTab('settings')}>设置</button>
       </nav>
@@ -377,14 +481,21 @@ interface OverviewDashboardProps {
   uglyEntries: UglyEntry[]
   wellnessEntries: WellnessEntry[]
   pleasureEntries: PleasureEntry[]
+  readingEntries: ReadingEntry[]
+  englishEntries: EnglishEntry[]
+  skillEntries: SkillEntry[]
+  gratitudeEntries: GratitudeEntry[]
+  discoveryEntries: DiscoveryEntry[]
+  sentenceEntries: SentenceEntry[]
   settings: Settings
 }
 
 type OverviewPeriod = 'today' | 'week' | 'month'
 type OverviewTab = 'summary' | 'trend'
 type TrendRange = 7 | 14 | 30
+type TrendMetric = 'beauty' | 'pleasure' | 'growth'
 
-function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntries, settings }: OverviewDashboardProps) {
+function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntries, readingEntries, englishEntries, skillEntries, gratitudeEntries, discoveryEntries, sentenceEntries, settings }: OverviewDashboardProps) {
   const [tab, setTab] = useState<OverviewTab>('summary')
   const [period, setPeriod] = useState<OverviewPeriod>('today')
   const now = new Date()
@@ -456,30 +567,61 @@ function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntr
   const p = periods[periodIndex]
 
   const [trendRange, setTrendRange] = useState<TrendRange>(7)
+  const [trendMetric, setTrendMetric] = useState<TrendMetric>('pleasure')
+  const [trendBeautySub, setTrendBeautySub] = useState<null | 'exercise' | 'wellness' | 'ugly'>(null)
 
   const trendData = useMemo(() => {
     const days = trendRange
-    const list: { dateKey: string; label: string; beauty: number; pleasure: number }[] = []
+    const list: {
+      dateKey: string
+      label: string
+      health: number
+      exercise: number
+      wellness: number
+      ugly: number
+      pleasure: number
+      growth: number
+    }[] = []
     const msPerDay = 24 * 60 * 60 * 1000
     const today = new Date()
+
+    const countGrowth = (key: string) =>
+      readingEntries.filter((e) => e.dateKey === key).length +
+      englishEntries.filter((e) => e.dateKey === key).length +
+      skillEntries.filter((e) => e.dateKey === key).length +
+      gratitudeEntries.filter((e) => e.dateKey === key).length +
+      discoveryEntries.filter((e) => e.dateKey === key).length +
+      sentenceEntries.filter((e) => e.dateKey === key).length
 
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(today.getTime() - i * msPerDay)
       const key = toDateKey(d)
-      const beauty = entries.filter((e) => e.dateKey === key).reduce((s, e) => s + e.beautyGained, 0)
+      const exercise = entries.filter((e) => e.dateKey === key).reduce((s, e) => s + e.beautyGained, 0)
+      const wellness = wellnessEntries.filter((e) => e.dateKey === key).reduce((s, e) => s + e.wellnessGained, 0)
+      const ugly = uglyEntries.filter((e) => e.dateKey === key).reduce((s, e) => s + e.uglyGained, 0)
+      const health = Math.round((exercise - ugly + wellness) * 100) / 100
       const pleasure = pleasureEntries.filter((x) => x.dateKey === key).reduce((s, e) => s + e.score, 0)
+      const growth = countGrowth(key)
       list.push({
         dateKey: key,
         label: key.slice(5).replace('-', '/'),
-        beauty,
+        health,
+        exercise,
+        wellness,
+        ugly,
         pleasure,
+        growth,
       })
     }
-    const maxBeauty = Math.max(0, ...list.map((d) => d.beauty))
+    const maxHealth = Math.max(0, ...list.map((d) => d.health))
+    const maxExercise = Math.max(0, ...list.map((d) => d.exercise))
+    const maxWellness = Math.max(0, ...list.map((d) => d.wellness))
+    const maxUgly = Math.max(0, ...list.map((d) => d.ugly))
     const maxPleasure = Math.max(0, ...list.map((d) => d.pleasure))
-    const maxAll = Math.max(maxBeauty, maxPleasure, 1)
-    return { list, maxBeauty, maxPleasure, maxAll }
-  }, [entries, pleasureEntries, trendRange])
+    const maxGrowth = Math.max(0, ...list.map((d) => d.growth))
+    const maxAll = Math.max(maxHealth, maxExercise, maxWellness, maxUgly, maxPleasure, maxGrowth, 1)
+    return { list, maxHealth, maxPleasure, maxGrowth, maxAll, maxExercise, maxWellness, maxUgly }
+  }, [entries, uglyEntries, wellnessEntries, pleasureEntries, readingEntries, englishEntries, skillEntries, gratitudeEntries, discoveryEntries, sentenceEntries, trendRange])
 
   if (tab === 'trend') {
     const chartWidth = 320
@@ -489,7 +631,30 @@ function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntr
     const len = trendData.list.length
     const innerWidth = chartWidth - paddingX * 2
     const innerHeight = chartHeight - paddingY * 2
-    const maxAll = trendData.maxAll || 1
+
+    const getCurrentValue = (d: typeof trendData.list[0]) => {
+      if (trendMetric === 'beauty') {
+        if (trendBeautySub === null) return d.health
+        if (trendBeautySub === 'exercise') return d.exercise
+        if (trendBeautySub === 'wellness') return d.wellness
+        return d.ugly
+      }
+      if (trendMetric === 'pleasure') return d.pleasure
+      return d.growth
+    }
+    const maxCurrent =
+      trendMetric === 'beauty'
+        ? trendBeautySub === null
+          ? trendData.maxHealth
+          : trendBeautySub === 'exercise'
+            ? trendData.maxExercise
+            : trendBeautySub === 'wellness'
+              ? trendData.maxWellness
+              : trendData.maxUgly
+        : trendMetric === 'pleasure'
+          ? trendData.maxPleasure
+          : trendData.maxGrowth
+    const maxAll = Math.max(maxCurrent, 1)
 
     const makeY = (v: number) => {
       if (maxAll <= 0) return paddingY + innerHeight
@@ -504,34 +669,55 @@ function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntr
 
     const baselineY = paddingY + innerHeight
 
-    const beautyPath = trendData.list.map((d, idx) => ({
+    const path = trendData.list.map((d, idx) => ({
       x: makeX(idx),
-      y: makeY(d.beauty),
-    }))
-    const pleasurePath = trendData.list.map((d, idx) => ({
-      x: makeX(idx),
-      y: makeY(d.pleasure),
+      y: makeY(getCurrentValue(d)),
     }))
 
-    const beautyLinePoints = beautyPath.map((p) => `${p.x},${p.y}`).join(' ')
-    const pleasureLinePoints = pleasurePath.map((p) => `${p.x},${p.y}`).join(' ')
-
-    const beautyAreaPoints =
-      beautyPath.length > 1
-        ? `${beautyPath.map((p) => `${p.x},${p.y}`).join(' ')} ${beautyPath[beautyPath.length - 1].x},${baselineY} ${
-            beautyPath[0].x
-          },${baselineY}`
-        : ''
-    const pleasureAreaPoints =
-      pleasurePath.length > 1
-        ? `${pleasurePath.map((p) => `${p.x},${p.y}`).join(' ')} ${
-            pleasurePath[pleasurePath.length - 1].x
-          },${baselineY} ${pleasurePath[0].x},${baselineY}`
+    const linePoints = path.map((p) => `${p.x},${p.y}`).join(' ')
+    const areaPoints =
+      path.length > 1
+        ? `${path.map((p) => `${p.x},${p.y}`).join(' ')} ${path[path.length - 1].x},${baselineY} ${path[0].x},${baselineY}`
         : ''
 
     const firstLabel = trendData.list[0]?.label ?? ''
     const midLabel = len > 2 ? trendData.list[Math.floor(len / 2)].label : ''
     const lastLabel = len > 1 ? trendData.list[len - 1].label : firstLabel
+
+    const trendTitle =
+      trendMetric === 'beauty'
+        ? trendBeautySub === null
+          ? '健康值趋势'
+          : trendBeautySub === 'exercise'
+            ? '运动（运动值）趋势'
+            : trendBeautySub === 'wellness'
+              ? '养生值趋势'
+              : '变丑值趋势'
+        : trendMetric === 'pleasure'
+          ? '愉悦值趋势'
+          : '成长值趋势'
+    const legendLabel =
+      trendMetric === 'beauty'
+        ? trendBeautySub === null
+          ? '健康值'
+          : trendBeautySub === 'exercise'
+            ? '运动值 (B)'
+            : trendBeautySub === 'wellness'
+              ? '养生值 (W)'
+              : '变丑值 (U)'
+        : trendMetric === 'pleasure'
+          ? '愉悦值 (P)'
+          : '成长值 (条)'
+    const trendLineClass =
+      trendMetric === 'beauty'
+        ? trendBeautySub === null || trendBeautySub === 'exercise'
+          ? 'beauty'
+          : trendBeautySub === 'wellness'
+            ? 'wellness'
+            : 'ugly'
+        : trendMetric === 'pleasure'
+          ? 'pleasure'
+          : 'growth'
 
     return (
       <div className="overview-dashboard">
@@ -544,6 +730,54 @@ function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntr
             趋势
           </button>
         </div>
+        <div className="overview-trend-metric-tabs">
+          <button
+            type="button"
+            className={`overview-pill overview-pill-macaron overview-pill-beauty ${trendMetric === 'beauty' ? 'active' : ''}`}
+            onClick={() => setTrendMetric('beauty')}
+          >
+            健康
+          </button>
+          <button
+            type="button"
+            className={`overview-pill overview-pill-macaron overview-pill-pleasure ${trendMetric === 'pleasure' ? 'active' : ''}`}
+            onClick={() => setTrendMetric('pleasure')}
+          >
+            愉悦
+          </button>
+          <button
+            type="button"
+            className={`overview-pill overview-pill-macaron overview-pill-growth ${trendMetric === 'growth' ? 'active' : ''}`}
+            onClick={() => setTrendMetric('growth')}
+          >
+            成长
+          </button>
+        </div>
+        {trendMetric === 'beauty' && (
+          <div className="overview-trend-beauty-sub-tabs">
+            <button
+              type="button"
+              className={`overview-pill overview-pill-macaron overview-pill-exercise ${trendBeautySub === 'exercise' ? 'active' : ''}`}
+              onClick={() => setTrendBeautySub('exercise')}
+            >
+              运动
+            </button>
+            <button
+              type="button"
+              className={`overview-pill overview-pill-macaron overview-pill-wellness ${trendBeautySub === 'wellness' ? 'active' : ''}`}
+              onClick={() => setTrendBeautySub('wellness')}
+            >
+              养生
+            </button>
+            <button
+              type="button"
+              className={`overview-pill overview-pill-macaron overview-pill-ugly ${trendBeautySub === 'ugly' ? 'active' : ''}`}
+              onClick={() => setTrendBeautySub('ugly')}
+            >
+              变丑
+            </button>
+          </div>
+        )}
         <div className="overview-filters">
           <button
             type="button"
@@ -568,10 +802,9 @@ function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntr
           </button>
         </div>
         <div className="overview-trend-card">
-          <h3 className="overview-trend-title">美丽值 & 愉悦值趋势</h3>
+          <h3 className="overview-trend-title">{trendTitle}</h3>
           <div className="overview-trend-legend">
-            <span className="legend-item legend-beauty">美丽值 (B)</span>
-            <span className="legend-item legend-pleasure">愉悦值 (P)</span>
+            <span className={`legend-item legend-${trendLineClass}`}>{legendLabel}</span>
           </div>
           <svg
             className="overview-trend-chart"
@@ -587,8 +820,19 @@ function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntr
                 <stop offset="0%" stopColor="#c7d2fe" stopOpacity="0.8" />
                 <stop offset="100%" stopColor="#c7d2fe" stopOpacity="0" />
               </linearGradient>
+              <linearGradient id="trend-growth-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#6ee7b7" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#6ee7b7" stopOpacity="0" />
+              </linearGradient>
+              <linearGradient id="trend-wellness-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#86efac" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#86efac" stopOpacity="0" />
+              </linearGradient>
+              <linearGradient id="trend-ugly-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#fda4af" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#fda4af" stopOpacity="0" />
+              </linearGradient>
             </defs>
-            {/* 坐标参考线 */}
             <line
               x1={paddingX}
               y1={paddingY + innerHeight}
@@ -597,52 +841,26 @@ function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntr
               stroke="#e5e7eb"
               strokeWidth="1"
             />
-            {/* 美丽值曲线 + 面积 */}
-            {beautyPath.length > 0 && (
-              <g className="trend-line trend-line--beauty">
-                {beautyAreaPoints && (
+            {path.length > 0 && (
+              <g className={`trend-line trend-line--${trendLineClass}`}>
+                {areaPoints && (
                   <polygon
-                    points={beautyAreaPoints}
-                    className="overview-trend-area overview-trend-area--beauty"
+                    points={areaPoints}
+                    className={`overview-trend-area overview-trend-area--${trendLineClass}`}
                   />
                 )}
                 <polyline
-                  points={beautyLinePoints}
+                  points={linePoints}
                   fill="none"
-                  className="overview-trend-line overview-trend-line--beauty"
+                  className={`overview-trend-line overview-trend-line--${trendLineClass}`}
                 />
-                {beautyPath.map((p, idx) => (
+                {path.map((p, idx) => (
                   <circle
-                    key={`b-${trendData.list[idx].dateKey}`}
+                    key={trendData.list[idx].dateKey}
                     cx={p.x}
                     cy={p.y}
                     r={3}
-                    className="overview-trend-dot overview-trend-dot--beauty"
-                  />
-                ))}
-              </g>
-            )}
-            {/* 愉悦值曲线 + 面积 */}
-            {pleasurePath.length > 0 && (
-              <g className="trend-line trend-line--pleasure">
-                {pleasureAreaPoints && (
-                  <polygon
-                    points={pleasureAreaPoints}
-                    className="overview-trend-area overview-trend-area--pleasure"
-                  />
-                )}
-                <polyline
-                  points={pleasureLinePoints}
-                  fill="none"
-                  className="overview-trend-line overview-trend-line--pleasure"
-                />
-                {pleasurePath.map((p, idx) => (
-                  <circle
-                    key={`p-${trendData.list[idx].dateKey}`}
-                    cx={p.x}
-                    cy={p.y}
-                    r={3}
-                    className="overview-trend-dot overview-trend-dot--pleasure"
+                    className={`overview-trend-dot overview-trend-dot--${trendLineClass}`}
                   />
                 ))}
               </g>
@@ -693,7 +911,7 @@ function OverviewDashboard({ entries, uglyEntries, wellnessEntries, pleasureEntr
           </div>
         </div>
         <div className="overview-metrics">
-          <OverviewRow variant="beauty" label="变美" unit="B" value={p.beauty.value} target={p.beauty.goal} achieved={p.beauty.value >= p.beauty.goal} detailSummary={p.beauty.summary} />
+          <OverviewRow variant="beauty" label="运动" unit="B" value={p.beauty.value} target={p.beauty.goal} achieved={p.beauty.value >= p.beauty.goal} detailSummary={p.beauty.summary} />
           <OverviewRow variant="wellness" label="养生" unit="W" value={p.wellness.value} target={p.wellness.goal} achieved={p.wellness.value >= p.wellness.goal} detailSummary={p.wellness.summary} />
           <OverviewRow variant="ugly" label="变丑" unit="U" value={p.ugly.value} target={p.ugly.limit} isUpperBound achieved={p.ugly.limit <= 0 || p.ugly.value <= p.ugly.limit} detailSummary={p.ugly.summary} />
         </div>
@@ -882,17 +1100,7 @@ function Dashboard({ entries, setEntries, exercises, settings, syncMode }: Dashb
           setShowSheet(true)
         }}
       >
-        又变美了
-      </button>
-      <button
-        type="button"
-        className="btn-backfill"
-        onClick={() => {
-          setSheetMode('backfill')
-          setShowSheet(true)
-        }}
-      >
-        补卡（最近 7 天）
+        又运动了
       </button>
       <div className="summary-cards">
         {todaySummary && (
@@ -905,6 +1113,16 @@ function Dashboard({ entries, setEntries, exercises, settings, syncMode }: Dashb
           <SummaryCardView card={monthSummary} exerciseSummary={monthExerciseSummary} />
         )}
       </div>
+      <button
+        type="button"
+        className="btn-backfill"
+        onClick={() => {
+          setSheetMode('backfill')
+          setShowSheet(true)
+        }}
+      >
+        补卡（最近 7 天）
+      </button>
       {showSheet && (
         <RecordSheet
           exercises={exercises}
@@ -919,6 +1137,865 @@ function Dashboard({ entries, setEntries, exercises, settings, syncMode }: Dashb
         <ResultModal
           {...resultModal}
           onClose={() => setResultModal(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+interface BeautyHubProps {
+  entries: Entry[]
+  setEntries: (v: Entry[]) => void
+  exercises: Exercise[]
+  uglyEntries: UglyEntry[]
+  setUglyEntries: (v: UglyEntry[]) => void
+  uglyBehaviors: UglyBehavior[]
+  wellnessEntries: WellnessEntry[]
+  setWellnessEntries: (v: WellnessEntry[]) => void
+  wellnessBehaviors: WellnessBehavior[]
+  settings: Settings
+  syncMode?: boolean
+}
+
+function BeautyHub({
+  entries,
+  setEntries,
+  exercises,
+  uglyEntries,
+  setUglyEntries,
+  uglyBehaviors,
+  wellnessEntries,
+  setWellnessEntries,
+  wellnessBehaviors,
+  settings,
+  syncMode,
+}: BeautyHubProps) {
+  const [view, setView] = useState<'exercise' | 'wellness' | 'ugly'>('exercise')
+
+  return (
+    <div className="beauty-hub">
+      <div className="beauty-switch">
+        <button
+          type="button"
+          className={view === 'exercise' ? 'beauty-pill active' : 'beauty-pill'}
+          onClick={() => setView('exercise')}
+        >
+          <span className="beauty-pill-circle beauty-pill-circle--exercise">动</span>
+        </button>
+        <button
+          type="button"
+          className={view === 'wellness' ? 'beauty-pill active' : 'beauty-pill'}
+          onClick={() => setView('wellness')}
+        >
+          <span className="beauty-pill-circle beauty-pill-circle--wellness">养</span>
+        </button>
+        <button
+          type="button"
+          className={view === 'ugly' ? 'beauty-pill active' : 'beauty-pill'}
+          onClick={() => setView('ugly')}
+        >
+          <span className="beauty-pill-circle beauty-pill-circle--ugly">丑</span>
+        </button>
+      </div>
+
+      {view === 'exercise' && (
+        <Dashboard
+          entries={entries}
+          setEntries={setEntries}
+          exercises={exercises}
+          settings={settings}
+          syncMode={syncMode}
+        />
+      )}
+      {view === 'ugly' && (
+        <UglyDashboard
+          uglyEntries={uglyEntries}
+          setUglyEntries={setUglyEntries}
+          uglyBehaviors={uglyBehaviors}
+          settings={settings}
+          syncMode={syncMode}
+        />
+      )}
+      {view === 'wellness' && (
+        <WellnessDashboard
+          wellnessEntries={wellnessEntries}
+          setWellnessEntries={setWellnessEntries}
+          wellnessBehaviors={wellnessBehaviors}
+          settings={settings}
+          syncMode={syncMode}
+        />
+      )}
+    </div>
+  )
+}
+
+function ReadingSheet({
+  onClose,
+  onAddReadingEntry,
+  onUpdateReadingEntry,
+  onDeleteReadingEntry,
+  initialEntry,
+  todayEntries,
+}: {
+  onClose: () => void
+  onAddReadingEntry: (entry: ReadingEntry) => Promise<void>
+  onUpdateReadingEntry: (entry: ReadingEntry) => Promise<void>
+  onDeleteReadingEntry: (id: string) => Promise<void>
+  initialEntry: ReadingEntry | null
+  todayEntries: ReadingEntry[]
+}) {
+  const [bookName, setBookName] = useState(initialEntry?.bookName ?? '')
+  const [durationMinutes, setDurationMinutes] = useState(initialEntry?.durationMinutes ?? 0)
+  const [submitting, setSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  async function handleSubmit() {
+    const trimmed = bookName.trim()
+    if (!trimmed) return
+    setSubmitting(true)
+    try {
+      const now = new Date()
+      const dateKey = toDateKey(now)
+      const timestamp = now.toISOString()
+      if (initialEntry && trimmed === initialEntry.bookName) {
+        const updated: ReadingEntry = { ...initialEntry, durationMinutes, timestamp }
+        await onUpdateReadingEntry(updated)
+      } else {
+        const entry: ReadingEntry = {
+          id: crypto.randomUUID(),
+          timestamp,
+          dateKey,
+          bookName: trimmed,
+          durationMinutes,
+        }
+        await onAddReadingEntry(entry)
+      }
+      onClose()
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet sheet-reading" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-header">
+          <span>阅读打卡</span>
+          <button type="button" className="sheet-close" onClick={onClose}>×</button>
+        </div>
+        <div className="sheet-step">
+          {todayEntries.length > 0 && (
+            <div className="sheet-reading-recorded">
+              <div className="pleasure-field-label">今日已记录</div>
+              <ul className="sheet-reading-list">
+                {[...todayEntries].sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1)).map((e, index) => (
+                  <li key={e.id} className="sheet-reading-list-item">
+                    <span className="sheet-recorded-num">{index + 1}.</span>
+                    <span>{e.bookName} · {e.durationMinutes} 分钟</span>
+                    <button
+                      type="button"
+                      className="sheet-reading-delete"
+                      onClick={async () => {
+                        setDeletingId(e.id)
+                        try {
+                          await onDeleteReadingEntry(e.id)
+                        } finally {
+                          setDeletingId(null)
+                        }
+                      }}
+                      disabled={deletingId !== null}
+                      title="删除"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="pleasure-field">
+            <div className="pleasure-field-label">阅读书籍</div>
+            <div className="pleasure-field-body">
+              <input
+                type="text"
+                className="input-note input-pleasure-event"
+                placeholder="请输入书籍名称"
+                value={bookName}
+                onChange={(e) => setBookName(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="pleasure-field">
+            <div className="pleasure-field-label">阅读时长（分钟）</div>
+            <div className="sheet-reading-duration">
+              <button
+                type="button"
+                className="sheet-duration-btn"
+                onClick={() => setDurationMinutes((m) => Math.max(0, m - 10))}
+                disabled={durationMinutes <= 0}
+              >
+                −
+              </button>
+              <span className="sheet-duration-value">{durationMinutes}</span>
+              <button
+                type="button"
+                className="sheet-duration-btn"
+                onClick={() => setDurationMinutes((m) => m + 10)}
+              >
+                +
+              </button>
+            </div>
+            <span className="pleasure-score-hint">以 10 分钟为梯度，默认 0。</span>
+          </div>
+          <div className="sheet-actions">
+            <button type="button" className="secondary" onClick={onClose}>
+              取消
+            </button>
+            <button type="button" onClick={handleSubmit} disabled={!bookName.trim() || submitting}>
+              {submitting ? '提交中…' : '完成'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SkillSheet({
+  onClose,
+  onAddSkillEntry,
+  onUpdateSkillEntry,
+  onDeleteSkillEntry,
+  initialEntry,
+  todayEntries,
+}: {
+  onClose: () => void
+  onAddSkillEntry: (entry: SkillEntry) => Promise<void>
+  onUpdateSkillEntry: (entry: SkillEntry) => Promise<void>
+  onDeleteSkillEntry: (id: string) => Promise<void>
+  initialEntry: SkillEntry | null
+  todayEntries: SkillEntry[]
+}) {
+  const [skillName, setSkillName] = useState(initialEntry?.skillName ?? '')
+  const [durationMinutes, setDurationMinutes] = useState(initialEntry?.durationMinutes ?? 0)
+  const [submitting, setSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  async function handleSubmit() {
+    const trimmed = skillName.trim()
+    if (!trimmed) return
+    setSubmitting(true)
+    try {
+      const now = new Date()
+      const dateKey = toDateKey(now)
+      const timestamp = now.toISOString()
+      if (initialEntry && trimmed === initialEntry.skillName) {
+        const updated: SkillEntry = { ...initialEntry, durationMinutes, timestamp }
+        await onUpdateSkillEntry(updated)
+      } else {
+        const entry: SkillEntry = {
+          id: crypto.randomUUID(),
+          timestamp,
+          dateKey,
+          skillName: trimmed,
+          durationMinutes,
+        }
+        await onAddSkillEntry(entry)
+      }
+      onClose()
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet sheet-skill" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-header">
+          <span>技能打卡</span>
+          <button type="button" className="sheet-close" onClick={onClose}>×</button>
+        </div>
+        <div className="sheet-step">
+          {todayEntries.length > 0 && (
+            <div className="sheet-reading-recorded">
+              <div className="pleasure-field-label">今日已记录</div>
+              <ul className="sheet-reading-list">
+                {[...todayEntries].sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1)).map((e, index) => (
+                  <li key={e.id} className="sheet-reading-list-item">
+                    <span className="sheet-recorded-num">{index + 1}.</span>
+                    <span>{e.skillName} · {e.durationMinutes} 分钟</span>
+                    <button
+                      type="button"
+                      className="sheet-reading-delete"
+                      onClick={async () => {
+                        setDeletingId(e.id)
+                        try {
+                          await onDeleteSkillEntry(e.id)
+                        } finally {
+                          setDeletingId(null)
+                        }
+                      }}
+                      disabled={deletingId !== null}
+                      title="删除"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="pleasure-field">
+            <div className="pleasure-field-label">技能名称</div>
+            <div className="pleasure-field-body">
+              <input
+                type="text"
+                className="input-note input-pleasure-event"
+                placeholder="请输入技能名称"
+                value={skillName}
+                onChange={(e) => setSkillName(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="pleasure-field">
+            <div className="pleasure-field-label">学习时长（分钟）</div>
+            <div className="sheet-reading-duration">
+              <button
+                type="button"
+                className="sheet-duration-btn"
+                onClick={() => setDurationMinutes((m) => Math.max(0, m - 10))}
+                disabled={durationMinutes <= 0}
+              >
+                −
+              </button>
+              <span className="sheet-duration-value">{durationMinutes}</span>
+              <button
+                type="button"
+                className="sheet-duration-btn"
+                onClick={() => setDurationMinutes((m) => m + 10)}
+              >
+                +
+              </button>
+            </div>
+            <span className="pleasure-score-hint">以 10 分钟为梯度，默认 0。</span>
+          </div>
+          <div className="sheet-actions">
+            <button type="button" className="secondary" onClick={onClose}>
+              取消
+            </button>
+            <button type="button" onClick={handleSubmit} disabled={!skillName.trim() || submitting}>
+              {submitting ? '提交中…' : '完成'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EnglishSheet({
+  onClose,
+  onAddEnglishEntry,
+  todayEntries,
+}: {
+  onClose: () => void
+  onAddEnglishEntry: (entry: EnglishEntry) => Promise<void>
+  todayEntries: EnglishEntry[]
+}) {
+  const [content, setContent] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function saveCurrent() {
+    const trimmed = content.trim()
+    if (!trimmed) return
+    setSubmitting(true)
+    try {
+      const now = new Date()
+      const entry: EnglishEntry = {
+        id: crypto.randomUUID(),
+        timestamp: now.toISOString(),
+        dateKey: toDateKey(now),
+        content: trimmed,
+      }
+      await onAddEnglishEntry(entry)
+      setContent('')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleComplete() {
+    const trimmed = content.trim()
+    if (!trimmed) {
+      onClose()
+      return
+    }
+    setSubmitting(true)
+    try {
+      const now = new Date()
+      const entry: EnglishEntry = {
+        id: crypto.randomUUID(),
+        timestamp: now.toISOString(),
+        dateKey: toDateKey(now),
+        content: trimmed,
+      }
+      await onAddEnglishEntry(entry)
+      onClose()
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet sheet-english" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-header">
+          <span>今日学英语</span>
+          <button type="button" className="sheet-close" onClick={onClose}>×</button>
+        </div>
+        <div className="sheet-step">
+          {todayEntries.length > 0 && (
+            <div className="sheet-reading-recorded">
+              <div className="pleasure-field-label">今日已记录</div>
+              <ul className="sheet-reading-list">
+                {[...todayEntries].sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1)).map((e, index) => (
+                  <li key={e.id} className="sheet-reading-list-item">
+                    <span className="sheet-recorded-num">{index + 1}.</span>
+                    <span>{e.content}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="pleasure-field">
+            <div className="pleasure-field-label">已背内容：</div>
+            <div className="sheet-english-input-row">
+              <input
+                type="text"
+                className="input-note input-pleasure-event sheet-english-input"
+                placeholder="输入本句内容"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+              />
+              <div className="sheet-english-btns">
+                <button
+                  type="button"
+                  className="sheet-english-btn sheet-english-btn-check"
+                  onClick={handleComplete}
+                  disabled={submitting}
+                  title="输入完成"
+                >
+                  ✓
+                </button>
+                <button
+                  type="button"
+                  className="sheet-english-btn sheet-english-btn-plus"
+                  onClick={async () => { await saveCurrent() }}
+                  disabled={submitting || !content.trim()}
+                  title="输入下一句"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="sheet-actions">
+            <button type="button" className="secondary" onClick={onClose}>
+              取消
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// 通用内容列表弹层（今日感恩 / 今日发现 / 今日一句话，结构同今日学英语）
+interface ContentEntryLike {
+  id: string
+  timestamp: string
+  dateKey: string
+  content: string
+}
+
+function ContentListSheet<E extends ContentEntryLike>({
+  title,
+  fieldLabel,
+  placeholder,
+  onClose,
+  onAddEntry,
+  todayEntries,
+  createEntry,
+  listThemeClass,
+}: {
+  title: string
+  fieldLabel: string
+  placeholder: string
+  onClose: () => void
+  onAddEntry: (entry: E) => Promise<void>
+  todayEntries: E[]
+  createEntry: (payload: { id: string; timestamp: string; dateKey: string; content: string }) => E
+  listThemeClass?: string
+}) {
+  const [content, setContent] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function saveCurrent() {
+    const trimmed = content.trim()
+    if (!trimmed) return
+    setSubmitting(true)
+    try {
+      const now = new Date()
+      const entry = createEntry({
+        id: crypto.randomUUID(),
+        timestamp: now.toISOString(),
+        dateKey: toDateKey(now),
+        content: trimmed,
+      })
+      await onAddEntry(entry)
+      setContent('')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleComplete() {
+    const trimmed = content.trim()
+    if (!trimmed) {
+      onClose()
+      return
+    }
+    setSubmitting(true)
+    try {
+      const now = new Date()
+      const entry = createEntry({
+        id: crypto.randomUUID(),
+        timestamp: now.toISOString(),
+        dateKey: toDateKey(now),
+        content: trimmed,
+      })
+      await onAddEntry(entry)
+      onClose()
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className={`sheet sheet-english ${listThemeClass ?? ''}`.trim()} onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-header">
+          <span>{title}</span>
+          <button type="button" className="sheet-close" onClick={onClose}>×</button>
+        </div>
+        <div className="sheet-step">
+          {todayEntries.length > 0 && (
+            <div className="sheet-reading-recorded">
+              <div className="pleasure-field-label">今日已记录</div>
+              <ul className="sheet-reading-list">
+                {[...todayEntries].sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1)).map((e, index) => (
+                  <li key={e.id} className="sheet-reading-list-item">
+                    <span className="sheet-recorded-num">{index + 1}.</span>
+                    <span>{e.content}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="pleasure-field">
+            <div className="pleasure-field-label">{fieldLabel}</div>
+            <div className="sheet-english-input-row">
+              <input
+                type="text"
+                className="input-note input-pleasure-event sheet-english-input"
+                placeholder={placeholder}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+              />
+              <div className="sheet-english-btns">
+                <button
+                  type="button"
+                  className="sheet-english-btn sheet-english-btn-check"
+                  onClick={handleComplete}
+                  disabled={submitting}
+                  title="输入完成"
+                >
+                  ✓
+                </button>
+                <button
+                  type="button"
+                  className="sheet-english-btn sheet-english-btn-plus"
+                  onClick={async () => { await saveCurrent() }}
+                  disabled={submitting || !content.trim()}
+                  title="输入下一句"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="sheet-actions">
+            <button type="button" className="secondary" onClick={onClose}>
+              取消
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function GrowthPage({
+  readingEntries,
+  englishEntries,
+  skillEntries,
+  gratitudeEntries,
+  discoveryEntries,
+  sentenceEntries,
+  onAddReadingEntry,
+  onUpdateReadingEntry,
+  onDeleteReadingEntry,
+  onAddEnglishEntry,
+  onAddSkillEntry,
+  onUpdateSkillEntry,
+  onDeleteSkillEntry,
+  onAddGratitudeEntry,
+  onAddDiscoveryEntry,
+  onAddSentenceEntry,
+}: {
+  readingEntries: ReadingEntry[]
+  englishEntries: EnglishEntry[]
+  skillEntries: SkillEntry[]
+  gratitudeEntries: GratitudeEntry[]
+  discoveryEntries: DiscoveryEntry[]
+  sentenceEntries: SentenceEntry[]
+  onAddReadingEntry: (entry: ReadingEntry) => Promise<void>
+  onUpdateReadingEntry: (entry: ReadingEntry) => Promise<void>
+  onDeleteReadingEntry: (id: string) => Promise<void>
+  onAddEnglishEntry: (entry: EnglishEntry) => Promise<void>
+  onAddSkillEntry: (entry: SkillEntry) => Promise<void>
+  onUpdateSkillEntry: (entry: SkillEntry) => Promise<void>
+  onDeleteSkillEntry: (id: string) => Promise<void>
+  onAddGratitudeEntry: (entry: GratitudeEntry) => Promise<void>
+  onAddDiscoveryEntry: (entry: DiscoveryEntry) => Promise<void>
+  onAddSentenceEntry: (entry: SentenceEntry) => Promise<void>
+}) {
+  const [showReadingSheet, setShowReadingSheet] = useState(false)
+  const [showEnglishSheet, setShowEnglishSheet] = useState(false)
+  const [showSkillSheet, setShowSkillSheet] = useState(false)
+  const [showGratitudeSheet, setShowGratitudeSheet] = useState(false)
+  const [showDiscoverySheet, setShowDiscoverySheet] = useState(false)
+  const [showSentenceSheet, setShowSentenceSheet] = useState(false)
+  const todayKey = toDateKey(new Date())
+  const todayEntries = readingEntries.filter((e) => e.dateKey === todayKey)
+  const todayEnglishEntries = englishEntries.filter((e) => e.dateKey === todayKey)
+  const todaySkillEntries = skillEntries.filter((e) => e.dateKey === todayKey)
+  const todayGratitudeEntries = gratitudeEntries.filter((e) => e.dateKey === todayKey)
+  const todayDiscoveryEntries = discoveryEntries.filter((e) => e.dateKey === todayKey)
+  const todaySentenceEntries = sentenceEntries.filter((e) => e.dateKey === todayKey)
+  const latest = todayEntries[todayEntries.length - 1]
+  const latestSkill = todaySkillEntries[todaySkillEntries.length - 1]
+  const randomEnglish = useMemo(() => {
+    if (todayEnglishEntries.length === 0) return null
+    return todayEnglishEntries[Math.floor(Math.random() * todayEnglishEntries.length)]
+  }, [todayEnglishEntries])
+  const randomGratitude = useMemo(() => {
+    if (todayGratitudeEntries.length === 0) return null
+    return todayGratitudeEntries[Math.floor(Math.random() * todayGratitudeEntries.length)]
+  }, [todayGratitudeEntries])
+  const randomDiscovery = useMemo(() => {
+    if (todayDiscoveryEntries.length === 0) return null
+    return todayDiscoveryEntries[Math.floor(Math.random() * todayDiscoveryEntries.length)]
+  }, [todayDiscoveryEntries])
+  const randomSentence = useMemo(() => {
+    if (todaySentenceEntries.length === 0) return null
+    return todaySentenceEntries[Math.floor(Math.random() * todaySentenceEntries.length)]
+  }, [todaySentenceEntries])
+  const groupedByBook = todayEntries.reduce<Record<string, ReadingEntry>>((acc, entry) => {
+    const existing = acc[entry.bookName]
+    if (!existing || existing.timestamp < entry.timestamp) {
+      acc[entry.bookName] = entry
+    }
+    return acc
+  }, {})
+  const groupedList = Object.values(groupedByBook).sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1))
+  const groupedBySkill = todaySkillEntries.reduce<Record<string, SkillEntry>>((acc, entry) => {
+    const existing = acc[entry.skillName]
+    if (!existing || existing.timestamp < entry.timestamp) {
+      acc[entry.skillName] = entry
+    }
+    return acc
+  }, {})
+  const groupedSkillList = Object.values(groupedBySkill).sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1))
+  const items = [
+    { label: '今日阅读', key: 'reading', enabled: true },
+    { label: '今日学英语', key: 'english', enabled: true },
+    { label: '今日学技能', key: 'skill', enabled: true },
+    { label: '今日感恩', key: 'gratitude', enabled: true },
+    { label: '今日发现', key: 'discovery', enabled: true },
+    { label: '今日一句话', key: 'sentence', enabled: true },
+  ]
+
+  return (
+    <div className="growth-page">
+      <h2 className="growth-title">成长</h2>
+      <div className="growth-list">
+        {items.map(({ label, key, enabled }) => (
+          <button
+            key={key}
+            type="button"
+            className="growth-item"
+            disabled={!enabled}
+            onClick={
+              enabled && key === 'reading'
+                ? () => setShowReadingSheet(true)
+                : enabled && key === 'english'
+                  ? () => setShowEnglishSheet(true)
+                  : enabled && key === 'skill'
+                    ? () => setShowSkillSheet(true)
+                    : enabled && key === 'gratitude'
+                      ? () => setShowGratitudeSheet(true)
+                      : enabled && key === 'discovery'
+                        ? () => setShowDiscoverySheet(true)
+                        : enabled && key === 'sentence'
+                          ? () => setShowSentenceSheet(true)
+                          : undefined
+            }
+          >
+            <span className="growth-item-label">{label}</span>
+            {key === 'reading' ? (
+              <div className="growth-item-right">
+                {groupedList.length > 0 ? (
+                  groupedList.map((e) => (
+                    <span key={e.id} className="growth-item-sub growth-item-sub--highlight">
+                      {e.bookName} · {e.durationMinutes} 分钟
+                    </span>
+                  ))
+                ) : (
+                  <span className="growth-item-sub">去打卡</span>
+                )}
+              </div>
+            ) : key === 'english' ? (
+              <div className="growth-item-right growth-item-right--twoline">
+                <span className="growth-item-sub">
+                  {todayEnglishEntries.length > 0 ? `已背${todayEnglishEntries.length}条` : '去打卡'}
+                </span>
+                {randomEnglish && (
+                  <span className="growth-item-sub growth-item-sub--highlight growth-item-sub--preview">
+                    {randomEnglish.content}
+                  </span>
+                )}
+              </div>
+            ) : key === 'skill' ? (
+              <div className="growth-item-right">
+                {groupedSkillList.length > 0 ? (
+                  groupedSkillList.map((e) => (
+                    <span key={e.id} className="growth-item-sub growth-item-sub--highlight">
+                      {e.skillName} · {e.durationMinutes} 分钟
+                    </span>
+                  ))
+                ) : (
+                  <span className="growth-item-sub">去打卡</span>
+                )}
+              </div>
+            ) : key === 'gratitude' ? (
+              <div className="growth-item-right growth-item-right--twoline">
+                <span className="growth-item-sub">
+                  {todayGratitudeEntries.length > 0 ? `${todayGratitudeEntries.length}条` : '去打卡'}
+                </span>
+                {randomGratitude && (
+                  <span className="growth-item-sub growth-item-sub--highlight growth-item-sub--preview">
+                    {randomGratitude.content}
+                  </span>
+                )}
+              </div>
+            ) : key === 'discovery' ? (
+              <div className="growth-item-right growth-item-right--twoline">
+                <span className="growth-item-sub">
+                  {todayDiscoveryEntries.length > 0 ? `${todayDiscoveryEntries.length}条` : '去打卡'}
+                </span>
+                {randomDiscovery && (
+                  <span className="growth-item-sub growth-item-sub--highlight growth-item-sub--preview">
+                    {randomDiscovery.content}
+                  </span>
+                )}
+              </div>
+            ) : key === 'sentence' ? (
+              <div className="growth-item-right growth-item-right--twoline">
+                <span className="growth-item-sub">
+                  {todaySentenceEntries.length > 0 ? `${todaySentenceEntries.length}条` : '去打卡'}
+                </span>
+                {randomSentence && (
+                  <span className="growth-item-sub growth-item-sub--highlight growth-item-sub--preview">
+                    {randomSentence.content}
+                  </span>
+                )}
+              </div>
+            ) : null}
+          </button>
+        ))}
+      </div>
+      {showReadingSheet && (
+        <ReadingSheet
+          onClose={() => setShowReadingSheet(false)}
+          onAddReadingEntry={onAddReadingEntry}
+          onUpdateReadingEntry={onUpdateReadingEntry}
+          onDeleteReadingEntry={onDeleteReadingEntry}
+          initialEntry={latest ?? null}
+          todayEntries={todayEntries}
+        />
+      )}
+      {showEnglishSheet && (
+        <EnglishSheet
+          onClose={() => setShowEnglishSheet(false)}
+          onAddEnglishEntry={onAddEnglishEntry}
+          todayEntries={todayEnglishEntries}
+        />
+      )}
+      {showSkillSheet && (
+        <SkillSheet
+          onClose={() => setShowSkillSheet(false)}
+          onAddSkillEntry={onAddSkillEntry}
+          onUpdateSkillEntry={onUpdateSkillEntry}
+          onDeleteSkillEntry={onDeleteSkillEntry}
+          initialEntry={latestSkill ?? null}
+          todayEntries={todaySkillEntries}
+        />
+      )}
+      {showGratitudeSheet && (
+        <ContentListSheet<GratitudeEntry>
+          title="今日感恩"
+          fieldLabel="感恩内容："
+          placeholder="输入本条内容"
+          onClose={() => setShowGratitudeSheet(false)}
+          onAddEntry={onAddGratitudeEntry}
+          todayEntries={todayGratitudeEntries}
+          createEntry={(p) => ({ ...p })}
+          listThemeClass="sheet-gratitude"
+        />
+      )}
+      {showDiscoverySheet && (
+        <ContentListSheet<DiscoveryEntry>
+          title="今日发现"
+          fieldLabel="发现内容："
+          placeholder="输入本条内容"
+          onClose={() => setShowDiscoverySheet(false)}
+          onAddEntry={onAddDiscoveryEntry}
+          todayEntries={todayDiscoveryEntries}
+          createEntry={(p) => ({ ...p })}
+          listThemeClass="sheet-discovery"
+        />
+      )}
+      {showSentenceSheet && (
+        <ContentListSheet<SentenceEntry>
+          title="今日一句话"
+          fieldLabel="一句话内容："
+          placeholder="输入本条内容"
+          onClose={() => setShowSentenceSheet(false)}
+          onAddEntry={onAddSentenceEntry}
+          todayEntries={todaySentenceEntries}
+          createEntry={(p) => ({ ...p })}
+          listThemeClass="sheet-sentence"
         />
       )}
     </div>
@@ -1174,12 +2251,12 @@ function ResultModal({
         {achieved ? (
           <>
             <p className="modal-title">恭喜！</p>
-            <p>你本次收获美丽值 {beautyGained} B</p>
-            <p>今日累计收获美丽值 {todayTotal} B，目标已达成</p>
+            <p>你本次收获运动值 {beautyGained} B</p>
+            <p>今日累计收获运动值 {todayTotal} B，目标已达成</p>
           </>
         ) : (
           <>
-            <p>你本次收获美丽值 {beautyGained} B</p>
+            <p>你本次收获运动值 {beautyGained} B</p>
             <p>离目标只剩 {dailyGoal - todayTotal} B，加油</p>
           </>
         )}
@@ -1189,7 +2266,7 @@ function ResultModal({
   )
 }
 
-// ---------- 变丑 Tab：结构参考变美 ----------
+// ---------- 变丑 Tab：结构参考运动 ----------
 
 interface UglyDashboardProps {
   uglyEntries: UglyEntry[]
@@ -1270,6 +2347,11 @@ function UglyDashboard({ uglyEntries, setUglyEntries, uglyBehaviors, settings, s
       >
         又变丑了
       </button>
+      <div className="summary-cards">
+        <SummaryCardView card={todaySummary} exerciseSummary={todayUglySummary} unit="U" />
+        <SummaryCardView card={weekSummary} exerciseSummary={weekUglySummary} unit="U" />
+        <SummaryCardView card={monthSummary} exerciseSummary={monthUglySummary} unit="U" />
+      </div>
       <button
         type="button"
         className="btn-backfill"
@@ -1280,11 +2362,6 @@ function UglyDashboard({ uglyEntries, setUglyEntries, uglyBehaviors, settings, s
       >
         补卡（最近 7 天）
       </button>
-      <div className="summary-cards">
-        <SummaryCardView card={todaySummary} exerciseSummary={todayUglySummary} unit="U" />
-        <SummaryCardView card={weekSummary} exerciseSummary={weekUglySummary} unit="U" />
-        <SummaryCardView card={monthSummary} exerciseSummary={monthUglySummary} unit="U" />
-      </div>
       {showSheet && (
         <RecordUglySheet
           uglyBehaviors={uglyBehaviors}
@@ -1547,8 +2624,13 @@ function WellnessDashboard({ wellnessEntries, setWellnessEntries, wellnessBehavi
           setShowSheet(true)
         }}
       >
-        养生打卡
+        又养生了
       </button>
+      <div className="summary-cards">
+        <SummaryCardView card={todaySummary} exerciseSummary={todayWellnessSummary} unit="W" />
+        <SummaryCardView card={weekSummary} exerciseSummary={weekWellnessSummary} unit="W" />
+        <SummaryCardView card={monthSummary} exerciseSummary={monthWellnessSummary} unit="W" />
+      </div>
       <button
         type="button"
         className="btn-backfill"
@@ -1559,11 +2641,6 @@ function WellnessDashboard({ wellnessEntries, setWellnessEntries, wellnessBehavi
       >
         补卡（最近 7 天）
       </button>
-      <div className="summary-cards">
-        <SummaryCardView card={todaySummary} exerciseSummary={todayWellnessSummary} unit="W" />
-        <SummaryCardView card={weekSummary} exerciseSummary={weekWellnessSummary} unit="W" />
-        <SummaryCardView card={monthSummary} exerciseSummary={monthWellnessSummary} unit="W" />
-      </div>
       {showSheet && (
         <RecordWellnessSheet
           wellnessBehaviors={wellnessBehaviors}
@@ -1803,17 +2880,6 @@ function PleasureDashboard({ pleasureEntries, setPleasureEntries, pleasureCatego
       >
         我的愉悦时刻
       </button>
-      <button
-        type="button"
-        className="btn-backfill"
-        onClick={() => {
-          setSheetMode('backfill')
-          setShowSheet(true)
-        }}
-      >
-        补卡（最近 7 天）
-      </button>
-
       <section className="pleasure-draw-section">
         <h3>今日抽签</h3>
         <p className="settings-hint">从你历史的愉悦记录里，随机抽一条今天的灵感。</p>
@@ -1847,6 +2913,17 @@ function PleasureDashboard({ pleasureEntries, setPleasureEntries, pleasureCatego
         )}
       </section>
 
+      <button
+        type="button"
+        className="btn-backfill"
+        onClick={() => {
+          setSheetMode('backfill')
+          setShowSheet(true)
+        }}
+      >
+        补卡（最近 7 天）
+      </button>
+
       {showSheet && (
         <RecordPleasureSheet
           pleasureCategories={pleasureCategories}
@@ -1876,13 +2953,12 @@ function RecordPleasureSheet({ pleasureCategories: _pleasureCategories, onClose,
   const [dateKey, setDateKey] = useState(() => (isBackfill && maxDateKey ? maxDateKey : todayKey))
 
   const [eventText, setEventText] = useState('')
-  const [scoreInput, setScoreInput] = useState('')
+  const [score, setScore] = useState<number | null>(null)
   const [feeling, setFeeling] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const trimmedEvent = eventText.trim()
-  const numericScore = Number(scoreInput)
-  const validScore = Number.isFinite(numericScore) && numericScore > 0
+  const validScore = score != null
 
   function handleSubmit() {
     if (!trimmedEvent || !validScore) return
@@ -1897,12 +2973,12 @@ function RecordPleasureSheet({ pleasureCategories: _pleasureCategories, onClose,
       ? new Date(`${entryDateKey}T${now.toTimeString().slice(0, 8)}`).toISOString()
       : now.toISOString()
 
-    // 将 1–10 分的愉悦值映射回 3/6/10 强度档位，兼容旧数据结构
-    const raw = Math.round(numericScore)
+    // 将 1/3/5/7/10 的愉悦值映射回 3/6/10 强度档位，兼容旧数据结构
+    const raw = score!
     const clamped = Math.max(1, Math.min(10, raw))
     let intensity: 3 | 6 | 10 = 3
     if (clamped >= 8) intensity = 10
-    else if (clamped >= 5) intensity = 6
+    else if (clamped >= 4) intensity = 6
 
     const entry: PleasureEntry = {
       id: crypto.randomUUID(),
@@ -1941,39 +3017,52 @@ function RecordPleasureSheet({ pleasureCategories: _pleasureCategories, onClose,
           </div>
         )}
         <div className="sheet-step sheet-step-pleasure-free">
-          <p>事件</p>
-          <input
-            type="text"
-            className="input-note input-pleasure-event"
-            placeholder="例如：下班路上听到一首很喜欢的歌、躺在阳光下发呆…"
-            maxLength={40}
-            value={eventText}
-            onChange={(e) => setEventText(e.target.value)}
-          />
-
-          <p>愉悦值</p>
-          <div className="pleasure-score-row">
-            <input
-              type="number"
-              min={1}
-              max={10}
-              className="input-pleasure-score"
-              value={scoreInput}
-              onChange={(e) => setScoreInput(e.target.value)}
-              placeholder="1 - 10"
-            />
-            <span className="pleasure-score-hint">按直觉打分：3≈轻度，6≈中度，10≈高度。</span>
+          <div className="pleasure-field">
+            <div className="pleasure-field-label">事件</div>
+            <div className="pleasure-field-body">
+              <input
+                type="text"
+                className="input-note input-pleasure-event"
+                placeholder="例如：下班路上听到一首很喜欢的歌、躺在阳光下发呆…"
+                maxLength={40}
+                value={eventText}
+                onChange={(e) => setEventText(e.target.value)}
+              />
+            </div>
           </div>
 
-          <p>感受（可选）</p>
-          <textarea
-            className="input-note"
-            rows={3}
-            maxLength={80}
-            value={feeling}
-            onChange={(e) => setFeeling(e.target.value)}
-            placeholder="想简单写几句当时的心情、身体感觉、脑海里的念头…"
-          />
+          <div className="pleasure-field">
+            <div className="pleasure-field-label">愉悦值</div>
+            <div className="pleasure-field-body">
+          <div className="sheet-buttons pleasure-score-buttons">
+            {[1, 3, 5, 7, 10].map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={score === v ? 'active' : ''}
+                onClick={() => setScore(v)}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <span className="pleasure-score-hint">1/3/5/7/10 由低到高，按直觉选择一档即可。</span>
+            </div>
+          </div>
+
+          <div className="pleasure-field">
+            <div className="pleasure-field-label">感受（可选）</div>
+            <div className="pleasure-field-body">
+              <textarea
+                className="input-note pleasure-feeling-input"
+                rows={3}
+                maxLength={80}
+                value={feeling}
+                onChange={(e) => setFeeling(e.target.value)}
+                placeholder="想简单写几句当时的心情、身体感觉、脑海里的念头…"
+              />
+            </div>
+          </div>
 
           <div className="sheet-actions">
             <button type="button" className="secondary" onClick={onClose}>
@@ -2016,6 +3105,12 @@ interface HistoryProps {
   uglyEntries: UglyEntry[]
   wellnessEntries: WellnessEntry[]
   pleasureEntries: PleasureEntry[]
+  readingEntries: ReadingEntry[]
+  englishEntries: EnglishEntry[]
+  skillEntries: SkillEntry[]
+  gratitudeEntries: GratitudeEntry[]
+  discoveryEntries: DiscoveryEntry[]
+  sentenceEntries: SentenceEntry[]
   settings: Settings
   onDeleteExercise: (id: string) => void
   onDeleteUgly: (id: string) => void
@@ -2028,6 +3123,12 @@ function History({
   uglyEntries,
   wellnessEntries,
   pleasureEntries,
+  readingEntries,
+  englishEntries,
+  skillEntries,
+  gratitudeEntries,
+  discoveryEntries,
+  sentenceEntries,
   settings: _settings,
   onDeleteExercise,
   onDeleteUgly,
@@ -2035,7 +3136,7 @@ function History({
   onDeletePleasure,
 }: HistoryProps) {
   const [period, setPeriod] = useState<'week' | 'month'>('week')
-  const [view, setView] = useState<'exercise' | 'wellness' | 'ugly' | 'pleasure'>('exercise')
+  const [view, setView] = useState<'exercise' | 'wellness' | 'ugly' | 'pleasure' | 'growth'>('exercise')
   const now = new Date()
   const todayKey = toDateKey(now)
   const weekStart = getWeekStartDateKey(now)
@@ -2057,6 +3158,30 @@ function History({
     () => pleasureEntries.filter((e) => e.dateKey >= startKey && e.dateKey <= todayKey),
     [pleasureEntries, startKey, todayKey],
   )
+  const filteredReading = useMemo(
+    () => readingEntries.filter((e) => e.dateKey >= startKey && e.dateKey <= todayKey),
+    [readingEntries, startKey, todayKey],
+  )
+  const filteredEnglish = useMemo(
+    () => englishEntries.filter((e) => e.dateKey >= startKey && e.dateKey <= todayKey),
+    [englishEntries, startKey, todayKey],
+  )
+  const filteredSkill = useMemo(
+    () => skillEntries.filter((e) => e.dateKey >= startKey && e.dateKey <= todayKey),
+    [skillEntries, startKey, todayKey],
+  )
+  const filteredGratitude = useMemo(
+    () => gratitudeEntries.filter((e) => e.dateKey >= startKey && e.dateKey <= todayKey),
+    [gratitudeEntries, startKey, todayKey],
+  )
+  const filteredDiscovery = useMemo(
+    () => discoveryEntries.filter((e) => e.dateKey >= startKey && e.dateKey <= todayKey),
+    [discoveryEntries, startKey, todayKey],
+  )
+  const filteredSentence = useMemo(
+    () => sentenceEntries.filter((e) => e.dateKey >= startKey && e.dateKey <= todayKey),
+    [sentenceEntries, startKey, todayKey],
+  )
 
   const beautyList = useMemo(
     () => [...filtered].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)),
@@ -2077,6 +3202,15 @@ function History({
     () => [...filteredPleasure].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)),
     [filteredPleasure],
   )
+
+  const readingList = useMemo(() => [...filteredReading].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)), [filteredReading])
+  const englishList = useMemo(() => [...filteredEnglish].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)), [filteredEnglish])
+  const skillList = useMemo(() => [...filteredSkill].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)), [filteredSkill])
+  const gratitudeList = useMemo(() => [...filteredGratitude].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)), [filteredGratitude])
+  const discoveryList = useMemo(() => [...filteredDiscovery].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)), [filteredDiscovery])
+  const sentenceList = useMemo(() => [...filteredSentence].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)), [filteredSentence])
+
+  const hasGrowth = readingList.length > 0 || englishList.length > 0 || skillList.length > 0 || gratitudeList.length > 0 || discoveryList.length > 0 || sentenceList.length > 0
 
   return (
     <div className="history">
@@ -2118,6 +3252,13 @@ function History({
         >
           愉悦
         </button>
+        <button
+          type="button"
+          className={view === 'growth' ? 'tab active' : 'tab'}
+          onClick={() => setView('growth')}
+        >
+          成长
+        </button>
       </nav>
 
       {view === 'exercise' && (
@@ -2133,7 +3274,7 @@ function History({
                     <th>类型</th>
                     <th>运动</th>
                     <th>数量</th>
-                    <th>美丽值(B)</th>
+                    <th>运动值(B)</th>
                     <th>操作</th>
                   </tr>
                 </thead>
@@ -2311,6 +3452,96 @@ function History({
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {view === 'growth' && (
+        <section className="history-section history-growth-section">
+          <h2>成长记录</h2>
+          <p className="settings-hint">范围随上方选择（本周 / 本月），仅查看。</p>
+          {!hasGrowth && <p className="history-empty">本{period === 'week' ? '周' : '月'}暂无成长记录。</p>}
+          {hasGrowth && (
+            <div className="history-growth-blocks">
+              {readingList.length > 0 && (
+                <div className="history-growth-block">
+                  <h3>今日阅读</h3>
+                  <ul className="history-growth-list">
+                    {readingList.map((e) => (
+                      <li key={e.id}>
+                        <span className="history-growth-date">{e.dateKey.slice(5).replace('-', '/')}</span>
+                        <span>{e.bookName} · {e.durationMinutes} 分钟</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {englishList.length > 0 && (
+                <div className="history-growth-block">
+                  <h3>今日学英语</h3>
+                  <ul className="history-growth-list">
+                    {englishList.map((e) => (
+                      <li key={e.id}>
+                        <span className="history-growth-date">{e.dateKey.slice(5).replace('-', '/')}</span>
+                        <span>{e.content}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {skillList.length > 0 && (
+                <div className="history-growth-block">
+                  <h3>今日学技能</h3>
+                  <ul className="history-growth-list">
+                    {skillList.map((e) => (
+                      <li key={e.id}>
+                        <span className="history-growth-date">{e.dateKey.slice(5).replace('-', '/')}</span>
+                        <span>{e.skillName} · {e.durationMinutes} 分钟</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {gratitudeList.length > 0 && (
+                <div className="history-growth-block">
+                  <h3>今日感恩</h3>
+                  <ul className="history-growth-list">
+                    {gratitudeList.map((e) => (
+                      <li key={e.id}>
+                        <span className="history-growth-date">{e.dateKey.slice(5).replace('-', '/')}</span>
+                        <span>{e.content}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {discoveryList.length > 0 && (
+                <div className="history-growth-block">
+                  <h3>今日发现</h3>
+                  <ul className="history-growth-list">
+                    {discoveryList.map((e) => (
+                      <li key={e.id}>
+                        <span className="history-growth-date">{e.dateKey.slice(5).replace('-', '/')}</span>
+                        <span>{e.content}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sentenceList.length > 0 && (
+                <div className="history-growth-block">
+                  <h3>今日一句话</h3>
+                  <ul className="history-growth-list">
+                    {sentenceList.map((e) => (
+                      <li key={e.id}>
+                        <span className="history-growth-date">{e.dateKey.slice(5).replace('-', '/')}</span>
+                        <span>{e.content}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -2498,7 +3729,7 @@ function SettingsPanel({
           className={settingsTab === 'beauty' ? 'tab active' : 'tab'}
           onClick={() => setSettingsTab('beauty')}
         >
-          美丽
+          健康
         </button>
         <button
           type="button"
@@ -2522,10 +3753,10 @@ function SettingsPanel({
         return (
       <section className="settings-section">
         <h2>目标设置</h2>
-        <p className="settings-hint">仅设定日目标，周目标=日×7、月目标=日×当月天数；健康值目标 = 美丽值 − 丑陋值 + 养生值（自动计算）。</p>
+        <p className="settings-hint">仅设定日目标，周目标=日×7、月目标=日×当月天数；健康值目标 = 运动值 − 丑陋值 + 养生值（自动计算）。</p>
         <div className="settings-goals-grid">
           <div className="settings-goals-group">
-            <h3>美丽值下限</h3>
+            <h3>运动值下限</h3>
             <div className="settings-goals-row">
               <label>日（B）<input type="number" value={goalDisplay.dailyBeautyGoal} onChange={(e) => setGoalDisplay((p) => ({ ...p, dailyBeautyGoal: e.target.value }))} onBlur={(e) => commitGoal('dailyBeautyGoal', e.target.value)} /></label>
               <span className="settings-goals-readonly">周：{settings.dailyBeautyGoal * 7} B</span>
@@ -2563,14 +3794,14 @@ function SettingsPanel({
 
       {settingsTab === 'beauty' && (
       <section className="settings-section">
-        <h2>美丽配置（类型 / 运动 / 单位 / 每单位美丽值）</h2>
-        <p className="settings-hint">这里可以增删改运动条目，变美打卡会使用这里的配置。</p>
+        <h2>运动配置（类型 / 运动 / 单位 / 每单位运动值）</h2>
+        <p className="settings-hint">这里可以增删改运动条目，运动打卡会使用这里的配置。</p>
         <div className="exercise-table">
           <div className="exercise-row exercise-row--header">
             <span>类型</span>
             <span>运动名称</span>
             <span>单位</span>
-            <span>每单位美丽值</span>
+            <span>每单位运动值</span>
             <span />
           </div>
           {exercises.map((ex) => (

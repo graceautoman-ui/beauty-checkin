@@ -1,6 +1,6 @@
 import type { DayStats, Entry, Settings, SummaryCard, DayStatus, UglyEntry, WellnessEntry } from '../domain/types'
 
-// 计算单次打卡的美丽值，保留两位小数
+// 计算单次打卡的运动值，保留两位小数
 export function calcBeauty(amount: number, beautyPerUnit: number): number {
   const raw = amount * beautyPerUnit
   return Math.round(raw * 100) / 100
@@ -162,7 +162,7 @@ export function calcMonthSummary(entries: Entry[], settings: Settings, now = new
   }
 }
 
-/** 健康值目标 = 美丽值目标 - 丑陋值目标 + 养生值目标（由设置计算）；周=日×7，月=日×当月天数 */
+/** 健康值目标 = 运动值目标 - 丑陋值目标 + 养生值目标（由设置计算）；周=日×7，月=日×当月天数 */
 export function getDailyHealthGoal(settings: Settings): number {
   return settings.dailyBeautyGoal - settings.dailyUglyGoal + settings.dailyWellnessGoal
 }

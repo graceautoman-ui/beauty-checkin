@@ -1,4 +1,4 @@
-import type { Entry, Settings, Exercise, UglyBehavior, UglyEntry, WellnessBehavior, WellnessEntry, PleasureEntry, PleasureCategoryConfig } from '../domain/types'
+import type { Entry, Settings, Exercise, UglyBehavior, UglyEntry, WellnessBehavior, WellnessEntry, PleasureEntry, PleasureCategoryConfig, ReadingEntry, EnglishEntry, SkillEntry, GratitudeEntry, DiscoveryEntry, SentenceEntry } from '../domain/types'
 import { DEFAULT_EXERCISES } from '../domain/exercises'
 import { DEFAULT_UGLY_BEHAVIORS } from '../domain/uglyBehaviors'
 
@@ -135,7 +135,7 @@ export async function saveExercises(exercises: Exercise[]): Promise<void> {
   await setKV('exercises', exercises)
 }
 
-// ---------- 丑陋配置（独立存储，与美丽配置互不影响） ----------
+// ---------- 丑陋配置（独立存储，与运动配置互不影响） ----------
 
 /** 旧类型迁移为 身体/精神，保证选择「身体」时能筛出已配置行为 */
 function migrateUglyCategory(category: string): UglyBehavior['category'] {
@@ -169,7 +169,7 @@ export async function saveUglyBehaviors(behaviors: UglyBehavior[]): Promise<void
   await setKV('uglyBehaviors', behaviors)
 }
 
-// ---------- 变丑打卡记录（存 KV 数组，与变美 entries 独立） ----------
+// ---------- 变丑打卡记录（存 KV 数组，与运动 entries 独立） ----------
 
 export async function getAllUglyEntries(): Promise<UglyEntry[]> {
   const stored = await getKV<UglyEntry[]>('uglyEntries')
@@ -254,6 +254,102 @@ export async function savePleasureCategories(categories: PleasureCategoryConfig[
 }
 
 export { DEFAULT_PLEASURE_CATEGORIES }
+
+// ---------- 成长 · 阅读打卡 ----------
+export async function getAllReadingEntries(): Promise<ReadingEntry[]> {
+  const stored = await getKV<ReadingEntry[]>('readingEntries')
+  return stored ?? []
+}
+
+export async function addReadingEntry(entry: ReadingEntry): Promise<void> {
+  const list = await getAllReadingEntries()
+  list.push(entry)
+  await setKV('readingEntries', list)
+}
+
+export async function saveReadingEntries(entries: ReadingEntry[]): Promise<void> {
+  await setKV('readingEntries', entries)
+}
+
+// ---------- 成长 · 今日学英语 ----------
+export async function getAllEnglishEntries(): Promise<EnglishEntry[]> {
+  const stored = await getKV<EnglishEntry[]>('englishEntries')
+  return stored ?? []
+}
+
+export async function addEnglishEntry(entry: EnglishEntry): Promise<void> {
+  const list = await getAllEnglishEntries()
+  list.push(entry)
+  await setKV('englishEntries', list)
+}
+
+export async function saveEnglishEntries(entries: EnglishEntry[]): Promise<void> {
+  await setKV('englishEntries', entries)
+}
+
+// ---------- 成长 · 今日学技能 ----------
+export async function getAllSkillEntries(): Promise<SkillEntry[]> {
+  const stored = await getKV<SkillEntry[]>('skillEntries')
+  return stored ?? []
+}
+
+export async function addSkillEntry(entry: SkillEntry): Promise<void> {
+  const list = await getAllSkillEntries()
+  list.push(entry)
+  await setKV('skillEntries', list)
+}
+
+export async function saveSkillEntries(entries: SkillEntry[]): Promise<void> {
+  await setKV('skillEntries', entries)
+}
+
+// ---------- 成长 · 今日感恩 ----------
+export async function getAllGratitudeEntries(): Promise<GratitudeEntry[]> {
+  const stored = await getKV<GratitudeEntry[]>('gratitudeEntries')
+  return stored ?? []
+}
+
+export async function addGratitudeEntry(entry: GratitudeEntry): Promise<void> {
+  const list = await getAllGratitudeEntries()
+  list.push(entry)
+  await setKV('gratitudeEntries', list)
+}
+
+export async function saveGratitudeEntries(entries: GratitudeEntry[]): Promise<void> {
+  await setKV('gratitudeEntries', entries)
+}
+
+// ---------- 成长 · 今日发现 ----------
+export async function getAllDiscoveryEntries(): Promise<DiscoveryEntry[]> {
+  const stored = await getKV<DiscoveryEntry[]>('discoveryEntries')
+  return stored ?? []
+}
+
+export async function addDiscoveryEntry(entry: DiscoveryEntry): Promise<void> {
+  const list = await getAllDiscoveryEntries()
+  list.push(entry)
+  await setKV('discoveryEntries', list)
+}
+
+export async function saveDiscoveryEntries(entries: DiscoveryEntry[]): Promise<void> {
+  await setKV('discoveryEntries', entries)
+}
+
+// ---------- 成长 · 今日一句话 ----------
+export async function getAllSentenceEntries(): Promise<SentenceEntry[]> {
+  const stored = await getKV<SentenceEntry[]>('sentenceEntries')
+  return stored ?? []
+}
+
+export async function addSentenceEntry(entry: SentenceEntry): Promise<void> {
+  const list = await getAllSentenceEntries()
+  list.push(entry)
+  await setKV('sentenceEntries', list)
+}
+
+export async function saveSentenceEntries(entries: SentenceEntry[]): Promise<void> {
+  await setKV('sentenceEntries', entries)
+}
 
 // ---------- Entries 打卡记录 ----------
 

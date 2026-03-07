@@ -9,10 +9,10 @@ export interface Exercise {
   beautyPerUnit: number
 }
 
-// 丑陋配置的类型（与美丽值的力量/有氧无关）
+// 丑陋配置的类型（与运动值的力量/有氧无关）
 export type UglyCategory = '身体' | '精神'
 
-// 丑陋配置：与美丽配置结构一致，独立存储，供后续「变丑」打卡使用
+// 丑陋配置：与运动配置结构一致，独立存储，供后续「变丑」打卡使用
 export interface UglyBehavior {
   id: number
   category: UglyCategory
@@ -24,7 +24,7 @@ export interface UglyBehavior {
 // 养生配置的类型
 export type WellnessCategory = '补剂' | '身体放松' | '精神放松'
 
-// 养生配置：结构同丑陋/美丽配置，独立存储
+// 养生配置：结构同丑陋/运动配置，独立存储
 export interface WellnessBehavior {
   id: number
   category: WellnessCategory
@@ -87,7 +87,7 @@ export interface WellnessEntry {
   wellnessGained: number
 }
 
-// 每一条打卡记录（变美）
+// 每一条打卡记录（运动）
 export interface Entry {
   id: string
   timestamp: string // ISO 字符串，例如 2026-02-13T21:30:00.000Z
@@ -118,6 +118,54 @@ export interface DayStats {
   cardioSummary: string
   status: DayStatus
   completionRate: number
+}
+
+// 成长 · 今日阅读打卡
+export interface ReadingEntry {
+  id: string
+  timestamp: string
+  dateKey: string
+  bookName: string
+  durationMinutes: number
+}
+
+// 成长 · 今日学英语打卡（每条为已背内容）
+export interface EnglishEntry {
+  id: string
+  timestamp: string
+  dateKey: string
+  content: string
+}
+
+// 成长 · 今日学技能打卡（结构参考今日阅读）
+export interface SkillEntry {
+  id: string
+  timestamp: string
+  dateKey: string
+  skillName: string
+  durationMinutes: number
+}
+
+// 成长 · 今日感恩 / 今日发现 / 今日一句话（结构同今日学英语：每条为 content）
+export interface GratitudeEntry {
+  id: string
+  timestamp: string
+  dateKey: string
+  content: string
+}
+
+export interface DiscoveryEntry {
+  id: string
+  timestamp: string
+  dateKey: string
+  content: string
+}
+
+export interface SentenceEntry {
+  id: string
+  timestamp: string
+  dateKey: string
+  content: string
 }
 
 // 顶部今日 / 本周 / 本月卡片
